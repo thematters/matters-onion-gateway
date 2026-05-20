@@ -4,7 +4,7 @@
 
 The gateway protects readers from direct browser-side exposure to the clearnet Matters web app and third-party page resources.
 
-It does not make users anonymous to Matters after they log in. Matters still receives authenticated API requests from the gateway.
+The MVP is anonymous and read-only. It does not ask for Matters credentials and does not send authenticated GraphQL requests.
 
 ## Threats Reduced
 
@@ -16,28 +16,24 @@ It does not make users anonymous to Matters after they log in. Matters still rec
 
 ## Threats Not Solved
 
-- Matters account identity is still known to Matters after login
 - AWS can observe server metadata
 - Matters can observe gateway API traffic
-- A compromised gateway can steal sessions
+- A compromised gateway can observe reader requests through the gateway
 - Tor-level traffic correlation is outside scope
 
 ## Required Controls
 
-### Session
+### Anonymous Operation
 
-- Short-lived session
-- `HttpOnly` cookie
-- `SameSite=Strict`
-- No long-term token storage
-- Logout clears session server-side and client-side where applicable
+- No login form
+- No session storage
+- No access token storage
+- No GraphQL mutations in MVP
 
 ### Logging
 
 Do not log:
 
-- Passwords
-- Access tokens
 - GraphQL request bodies
 - Full query strings
 - Full image proxy URLs
@@ -86,8 +82,6 @@ base-uri 'none';
 
 Never commit:
 
-- Matters credentials
-- Matters access token
 - Session secret
 - AWS credentials
 - Cloudflare token
@@ -105,7 +99,6 @@ Use:
 
 MVP should include:
 
-- Login rate limit
 - Short upstream timeouts
 - Request body size limits
 - Image proxy size limits

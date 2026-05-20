@@ -2,15 +2,11 @@
 
 ## Product
 
-- Should the first public release allow login, or start as anonymous article reader only?
-- Should my bookmarks be included in MVP or Phase 2?
 - Should external links open directly, or always pass through a warning page?
-- Should noindex articles be hidden entirely or shown only to authenticated users with access?
+- Should noindex articles be hidden entirely or shown with a clear label?
 
 ## Technical
 
-- Which exact Matters login mutation should be used for production?
-- Should session storage be encrypted cookie only, or server-side session?
 - Should local Kubo be included from day one?
 - Which fallback IPFS gateway is acceptable?
 - What timeout should be used for GraphQL and IPFS requests?
@@ -24,6 +20,6 @@
 
 ## Legal and Trust
 
-- What wording should explain that logged-in users are still known to Matters?
+- What wording should explain that the MVP is anonymous and read-only?
 - What takedown or issue-reporting process should be provided?
 - Should the gateway publish source code before public launch?

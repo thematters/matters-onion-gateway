@@ -102,3 +102,7 @@ The gateway should refuse or downgrade rendering when:
 - `noindex` is true and policy decides not to republish
 
 For MVP, if in doubt, show less content.
+
+## MVP Mutation Policy
+
+The MVP must not send GraphQL mutations. Reading public article data is enough for the first release.

@@ -6,9 +6,7 @@ Target time: 0.5 to 1 day
 
 Work:
 
-- Confirm Matters GraphQL login operation
 - Confirm anonymous article query
-- Confirm logged-in viewer query
 - Confirm article fields for `dataHash`, `mediaHash`, `contents.html`, `contents.markdown`, `access.type`, and `noindex`
 - Pick fallback IPFS gateway
 - Decide whether MVP starts with local Kubo or gateway-only mode
@@ -27,8 +25,6 @@ Work:
 
 - Create Node app skeleton
 - Add GraphQL client
-- Add login and logout
-- Add short-lived session
 - Add article URL parser
 - Add article lookup page
 - Add sanitized article page
@@ -41,32 +37,28 @@ Work:
 Exit criteria:
 
 - User can open the site through Tor Browser
-- User can log in through the onion site
 - User can paste a Matters URL and read the article
 - Page does not load third-party JavaScript
 - Remote images are proxied or blocked
-- Access tokens are not written to logs or disk
+- No login, token, or session code is required
 
-## Phase 2 Personal Reader
+## Phase 2 Reader Hardening
 
 Target time: 1 to 2 weeks
 
 Work:
 
-- Add my articles
-- Add my bookmarks
 - Add local Kubo gateway, if needed
 - Add image proxy cache
-- Add login rate limit
 - Add basic health checks
 - Add Cloudflare clearnet landing page
+- Add optional author page only if it stays anonymous and read-only
 
 Exit criteria:
 
-- Logged-in user can read personal article lists
 - IPFS adapter is local-first if Kubo is enabled
 - Health check reports app and upstream status
-- Clearnet landing page publishes the onion address without requiring login
+- Clearnet landing page publishes the onion address without requiring user accounts
 
 ## Phase 3 Optional Read-only Expansion
 
@@ -85,6 +77,7 @@ Exit criteria:
 - Each added page has a privacy review
 - Each added page has acceptance criteria
 - No feature adds long-term user activity storage
+- No feature requires user login
 
 ## Deferred Features
 
@@ -96,6 +89,9 @@ These should not be implemented in the first release:
 - Donation
 - Wallet
 - Notifications
+- Login
+- Bookmarks
+- Comments mutation
 - Full-site crawler
 - Full-text search
 - Global article sync

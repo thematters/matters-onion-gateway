@@ -62,7 +62,7 @@ The Tor hidden service key must never be copied into the repository.
 - Config is loaded
 - GraphQL endpoint is reachable
 
-It should not check user login.
+It should not depend on any user account.
 
 It should not return secrets.
 
@@ -92,11 +92,10 @@ Rotating the onion private key changes the onion address. Treat it as a delibera
 
 ## Incident Response
 
-If token leakage is suspected:
+If sensitive configuration leakage is suspected:
 
 - Stop app
-- Clear sessions
-- Rotate session secret
+- Rotate affected secrets
 - Review logs for accidental sensitive fields
 - Patch redaction
 - Restart app

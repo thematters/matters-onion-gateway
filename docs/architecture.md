@@ -2,9 +2,9 @@
 
 ## Product Shape
 
-Matters Onion Gateway is a small onion access gateway. It is not a platform fork and not a full mirror.
+Matters Onion Gateway is a small anonymous onion reader. It is not a platform fork and not a full mirror.
 
-The gateway keeps Matters as the canonical identity, publishing, and content layer. It adds a safer access path for users who prefer Tor.
+The gateway keeps Matters as the canonical publishing and content layer. It adds a safer read-only access path for users who prefer Tor.
 
 ## System Overview
 
@@ -48,7 +48,6 @@ Recommended stack:
 Responsibilities:
 
 - Render minimal pages
-- Manage login session
 - Call Matters GraphQL
 - Sanitize article HTML
 - Rewrite or proxy media
@@ -56,13 +55,7 @@ Responsibilities:
 
 ### Matters GraphQL Client
 
-The gateway should call existing Matters GraphQL operations for:
-
-- Login
-- Viewer
-- Article lookup
-- My articles
-- My bookmarks
+The gateway should call existing Matters GraphQL operations for anonymous public article lookup.
 
 All GraphQL operations must be centralized in one module so upstream schema changes are easy to handle.
 
@@ -93,7 +86,6 @@ Not suitable for MVP:
 
 - Primary onion hosting
 - Tor daemon replacement
-- Storing session secrets
 
 ## Request Flow
 
@@ -108,23 +100,12 @@ Gateway renders sanitized HTML fallback
 Gateway proxies or blocks external media
 ```
 
-### Login
-
-```text
-User submits credentials over onion
-Gateway calls Matters login mutation
-Gateway stores short-lived session
-Gateway uses session token for later GraphQL calls
-Gateway never stores credentials
-```
-
 ## Data Storage
 
-MVP should avoid persistent storage unless needed.
+MVP should avoid persistent storage.
 
 Allowed storage:
 
-- Encrypted session cookie
 - Optional SQLite for non-sensitive cache
 - Optional local cache for proxied images
 
@@ -140,14 +121,9 @@ Forbidden storage:
 
 ```text
 GET  /
-GET  /login
-POST /login
-POST /logout
 GET  /article
 GET  /article/:shortHash
 GET  /ipfs/:cid
-GET  /me/articles
-GET  /me/bookmarks
 GET  /proxy/image
 GET  /healthz
 ```

@@ -11,16 +11,13 @@ The MVP is acceptable when the following criteria are met.
 - Direct public HTTP access to the app port is not exposed
 - `/healthz` returns a minimal status without secrets
 
-## Login
+## Anonymous Scope
 
-- User can log in with a Matters account through the onion site
-- User can log out
-- Session expires automatically
-- Session cookie is `HttpOnly`
-- Session cookie uses `SameSite=Strict`
-- Credentials are never logged
-- Access token is never logged
-- Access token is not stored in a long-lived database
+- No login form exists
+- No session cookie is issued
+- No Matters access token is required
+- No mutation is sent to Matters GraphQL
+- No credentials are requested or stored
 
 ## Article Reading
 
@@ -60,15 +57,6 @@ X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 Permissions-Policy: camera=(), microphone=(), geolocation=()
 ```
-
-## Personal Pages
-
-When Phase 2 is implemented:
-
-- Logged-in user can view my articles
-- Logged-in user can view my bookmarks
-- Personal pages are not cached publicly
-- Personal page errors do not expose upstream tokens
 
 ## Deployment
 

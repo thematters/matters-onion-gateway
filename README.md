@@ -1,13 +1,12 @@
 # Matters Onion Gateway
 
-Matters Onion Gateway is a lightweight Tor onion access layer for Matters.
+Matters Onion Gateway is a lightweight anonymous Tor onion reader for Matters.
 
-It is designed to be simple, cheap, and sustainable. It does not mirror the full Matters site. It provides a minimal onion interface for safer login, article reading, and IPFS-aware content verification by using existing Matters GraphQL and IPFS support.
+It is designed to be simple, cheap, and sustainable. It does not mirror the full Matters site. It provides a minimal onion interface for public article reading and IPFS-aware content verification by using existing Matters GraphQL and IPFS support.
 
 ## Goals
 
-- Provide an onion-only access path for Matters readers
-- Allow users to log in without loading the clearnet Matters web app
+- Provide an onion-friendly read-only path for Matters readers
 - Let users open articles by Matters URL, short hash, media hash, or IPFS CID
 - Prefer existing Matters IPFS fingerprints when available
 - Proxy or block external resources to reduce reader network leakage
@@ -18,6 +17,8 @@ It is designed to be simple, cheap, and sustainable. It does not mirror the full
 - No full-site mirror
 - No full-text search engine
 - No clone of matters-web
+- No login in MVP
+- No bookmarks or comments in MVP
 - No publishing, editing, payment, notification, or wallet workflow in MVP
 - No long-term storage of user credentials or access tokens
 - No storage of private user content
@@ -27,12 +28,8 @@ It is designed to be simple, cheap, and sustainable. It does not mirror the full
 
 The first version should include only:
 
-- Login and logout
-- Session handling with short-lived secure cookies
 - Article lookup and sanitized reading page
 - IPFS CID display and gateway adapter
-- My articles
-- My bookmarks
 - Image proxy or remote image blocking
 - Basic health check
 - Minimal deployment scripts and docs
@@ -53,7 +50,22 @@ Cloudflare is optional and should only support clearnet landing pages, DNS, stat
 
 ## Repository Status
 
-This repository currently contains planning, deployment, and acceptance documents. Runtime code should be added only after the MVP scope is locked.
+This repository now contains the first anonymous read-only Node app plus planning, deployment, and acceptance documents.
+
+## Local Development
+
+```bash
+npm install
+npm start
+```
+
+Open `http://127.0.0.1:3000`.
+
+Run tests:
+
+```bash
+npm test
+```
 
 ## Documents
 
