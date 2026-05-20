@@ -9,6 +9,8 @@ Anonymous discovery uses only read queries:
 - `channels` for active public channels and sampled public article lists
 - `channel(input)` for a single public channel page
 - `search(input: { type: Article, record: false })` for keyword search
+- `user(input: { userName, userNameCaseIgnore: true })` for direct author lookup
+- `search(input: { type: User, record: false })` for author display-name fallback
 
 The gateway does not maintain its own search index. It filters returned articles to active public articles before rendering links.
 

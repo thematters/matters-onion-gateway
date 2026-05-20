@@ -8,6 +8,8 @@ It is designed to be simple, cheap, and sustainable. It does not mirror the full
 
 - Provide an onion-friendly read-only path for Matters readers
 - Provide anonymous discovery through public search, public channels, and a lightweight home feed
+- Provide anonymous author lookup by Matters ID or display name
+- Provide Traditional Chinese and Simplified Chinese UI text
 - Let users open articles by Matters URL, short hash, media hash, or IPFS CID
 - Prefer existing Matters IPFS fingerprints when available
 - Proxy or block external resources to reduce reader network leakage
@@ -31,6 +33,7 @@ The first version should include only:
 
 - Anonymous home page backed by public Matters channel data
 - Anonymous public article search backed by Matters GraphQL
+- Anonymous author search and author article lists backed by Matters GraphQL
 - Public channel article lists
 - Article lookup and sanitized reading page
 - IPFS CID display and gateway adapter
@@ -70,10 +73,25 @@ Useful local routes:
 ```text
 GET /
 GET /search?q=matters
+GET /author?q=Matty
+GET /author/{userName}
 GET /channel/{shortHash}
 GET /article/{shortHash}
 GET /healthz
 ```
+
+Add `?lang=zh-Hans` to use the Simplified Chinese interface. The default interface is Traditional Chinese unless the browser sends a Simplified Chinese `Accept-Language` header.
+
+## Design System Use
+
+This repo follows the vendored-copy path recommended by `thematters/design-system` for static HTML services. It uses the current Matters brand direction without adding a frontend build pipeline:
+
+- Brand purple `#7258FF` and brand green `#C3F432`
+- Pill-shaped primary buttons
+- Text field focus ring behavior
+- Lightweight ArticleCard, AuthorCard, and Avatar patterns
+
+React components are intentionally not imported because the onion gateway has no client-side React runtime.
 
 Run tests:
 

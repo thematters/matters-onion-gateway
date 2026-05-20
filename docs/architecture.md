@@ -117,6 +117,31 @@ Gateway filters non-public or inactive articles
 Gateway renders links to sanitized article pages
 ```
 
+```text
+User searches an author ID or display name
+Gateway first tries user(input: { userName, userNameCaseIgnore: true })
+Gateway falls back to anonymous search(input: { type: User, record: false })
+Gateway renders author profile metadata and public article links
+```
+
+### Localization
+
+```text
+Default UI language: Traditional Chinese
+Simplified Chinese UI: ?lang=zh-Hans or zh-CN/zh-Hans Accept-Language
+Language state is carried in URLs and hidden form fields
+No language cookie or user profile is stored
+```
+
+### Design System
+
+The frontend uses the `thematters/design-system` static consumption model:
+
+- Use design tokens and component behavior as CSS references
+- Keep one server-rendered HTML app
+- Avoid React runtime and bundling for the onion MVP
+- Prefer Button, TextField, Avatar, and ArticleCard patterns that can be represented with static HTML/CSS
+
 ## Data Storage
 
 MVP should avoid persistent storage.
@@ -139,6 +164,8 @@ Forbidden storage:
 ```text
 GET  /
 GET  /search
+GET  /author
+GET  /author/:userName
 GET  /channel/:shortHash
 GET  /article
 GET  /article/:shortHash

@@ -53,6 +53,18 @@ const ARTICLE_LIST_FIELDS = `
   }
 `
 
+const AUTHOR_FIELDS = `
+  id
+  userName
+  displayName
+  avatar
+  info {
+    description
+    profileCover
+    ipnsKey
+  }
+`
+
 const ARTICLE_BY_SHORT_HASH = `
   query ArticleByShortHash($shortHash: String) {
     article(input: { shortHash: $shortHash }) {
@@ -134,6 +146,37 @@ const CHANNEL_ARTICLES = `
             node {
               ${ARTICLE_LIST_FIELDS}
             }
+          }
+        }
+      }
+    }
+  }
+`
+
+const AUTHOR_BY_USERNAME = `
+  query AuthorByUserName($userName: String!) {
+    user(input: { userName: $userName, userNameCaseIgnore: true }) {
+      ${AUTHOR_FIELDS}
+      articles(input: { first: 24 }) {
+        edges {
+          node {
+            ${ARTICLE_LIST_FIELDS}
+          }
+        }
+      }
+    }
+  }
+`
+
+const SEARCH_AUTHORS = `
+  query SearchAuthors($key: String!) {
+    search(input: { key: $key, type: User, first: 10, record: false }) {
+      totalCount
+      edges {
+        node {
+          __typename
+          ... on User {
+            ${AUTHOR_FIELDS}
           }
         }
       }
@@ -238,6 +281,29 @@ export async function getChannelArticles(shortHash, { first = 24 } = {}) {
   return normalizeChannel(data.channel)
 }
 
+export async function getAuthorByUserName(userName) {
+  const data = await queryMatters(AUTHOR_BY_USERNAME, {
+    userName,
+  })
+
+  return normalizeAuthor(data.user)
+}
+
+export async function searchAuthors(key) {
+  const data = await queryMatters(SEARCH_AUTHORS, {
+    key,
+  })
+
+  return {
+    totalCount: data.search?.totalCount || 0,
+    authors: (data.search?.edges || [])
+      .map((edge) => edge?.node)
+      .filter((node) => node?.__typename === 'User')
+      .map(normalizeAuthor)
+      .filter(Boolean),
+  }
+}
+
 function normalizeChannel(channel) {
   if (!channel) {
     return null
@@ -249,6 +315,25 @@ function normalizeChannel(channel) {
     title: channel.navbarTitle,
     articles: filterPublicArticles(
       (channel.articles?.edges || []).map((edge) => edge?.node).filter(Boolean)
+    ),
+  }
+}
+
+function normalizeAuthor(user) {
+  if (!user) {
+    return null
+  }
+
+  return {
+    id: user.id,
+    userName: user.userName,
+    displayName: user.displayName,
+    avatar: user.avatar,
+    description: user.info?.description || '',
+    profileCover: user.info?.profileCover || '',
+    ipnsKey: user.info?.ipnsKey || '',
+    articles: filterPublicArticles(
+      (user.articles?.edges || []).map((edge) => edge?.node).filter(Boolean)
     ),
   }
 }

@@ -19,11 +19,14 @@ The MVP is acceptable when the following criteria are met.
 - No mutation is sent to Matters GraphQL
 - Search requests use Matters GraphQL with `record: false`
 - No credentials are requested or stored
+- Language selection is carried by URL or request headers, not cookies
 
 ## Article Reading
 
 - Home page lists public articles without requiring a known Matters URL
 - User can search public articles without logging in
+- User can search authors by ID or display name without logging in
+- Author page displays public profile text and public article list when available
 - User can browse public channel article lists without logging in
 - User can open an article by Matters URL
 - User can open an article by short hash
@@ -76,4 +79,5 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 - Deployment phases are documented
 - Acceptance criteria are documented
 - Security and privacy boundaries are documented
+- Traditional Chinese and Simplified Chinese UI availability is documented
 - No real token, password, onion private key, IP address, SSH host, or account identifier is committed

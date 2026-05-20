@@ -5,11 +5,14 @@ import { dirname, join } from 'node:path'
 import { config } from './config.js'
 import { identifyArticleInput } from './identify.js'
 import {
+  getAuthorByUserName,
   getArticleByIdentifier,
   getChannelArticles,
   getHomeFeed,
+  searchAuthors,
   searchArticles,
 } from './graphql.js'
+import { resolveLanguage } from './i18n.js'
 import { fetchIpfsCid } from './ipfs.js'
 import { sanitizeArticleHtml } from './sanitize.js'
 import { articleView, channelView, errorView, homeView, searchView } from './views.js'
@@ -28,13 +31,14 @@ const securityHeaders = {
 
 export async function handleRequest(request) {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`)
+  const lang = resolveLanguage({ searchParams: url.searchParams, headers: request.headers })
 
   if (request.method !== 'GET') {
-    return respond(errorView('Method not allowed', 405))
+    return respond(errorView({ messageKey: 'methodNotAllowed', status: 405, lang }))
   }
 
   if (url.pathname === '/') {
-    return handleHome()
+    return handleHome(lang)
   }
 
   if (url.pathname === '/styles.css') {
@@ -55,96 +59,149 @@ export async function handleRequest(request) {
   }
 
   if (url.pathname === '/article') {
-    return handleArticleLookup(url.searchParams.get('q') || '')
+    return handleArticleLookup(url.searchParams.get('q') || '', lang)
   }
 
   if (url.pathname === '/search') {
-    return handleSearch(url.searchParams.get('q') || '')
+    return handleSearch(url.searchParams.get('q') || '', lang)
+  }
+
+  if (url.pathname === '/author') {
+    return handleAuthorSearch(url.searchParams.get('q') || '', lang)
+  }
+
+  const authorPathMatch = url.pathname.match(/^\/author\/([^/]+)$/)
+  if (authorPathMatch) {
+    return handleAuthor(decodeURIComponent(authorPathMatch[1]), lang)
   }
 
   const channelPathMatch = url.pathname.match(/^\/channel\/([^/]+)$/)
   if (channelPathMatch) {
-    return handleChannel(channelPathMatch[1])
+    return handleChannel(channelPathMatch[1], lang)
   }
 
   const articlePathMatch = url.pathname.match(/^\/article\/([^/]+)$/)
   if (articlePathMatch) {
-    return handleArticleLookup(articlePathMatch[1])
+    return handleArticleLookup(articlePathMatch[1], lang)
   }
 
   const ipfsMatch = url.pathname.match(/^\/ipfs\/([^/]+)$/)
   if (ipfsMatch) {
-    return handleIpfs(ipfsMatch[1])
+    return handleIpfs(ipfsMatch[1], lang)
   }
 
   if (url.pathname === '/proxy/image') {
-    return handleImageProxy(url.searchParams.get('url') || '')
+    return handleImageProxy(url.searchParams.get('url') || '', lang)
   }
 
-  return respond(errorView('Not found', 404))
+  return respond(errorView({ messageKey: 'notFound', status: 404, lang }))
 }
 
-async function handleHome() {
+async function handleHome(lang) {
   const feed = await getHomeFeed()
-  return respond(homeView(feed))
+  return respond(homeView({ ...feed, lang }))
 }
 
-async function handleSearch(query) {
+async function handleSearch(query, lang) {
   const key = query.trim()
 
   if (!key) {
     const feed = await getHomeFeed()
-    return respond(homeView({ ...feed, searchError: 'Enter a search term.' }))
+    return respond(homeView({ ...feed, lang, searchErrorKey: 'enterSearch' }))
   }
 
   const result = await searchArticles(key)
-  return respond(searchView({ query: key, result }))
+  return respond(searchView({ query: key, result, lang }))
 }
 
-async function handleChannel(shortHash) {
+async function handleAuthorSearch(query, lang) {
+  const key = query.trim()
+
+  if (!key) {
+    const feed = await getHomeFeed()
+    return respond(homeView({ ...feed, lang, authorErrorKey: 'enterAuthor' }))
+  }
+
+  const direct = await getAuthorByUserName(key)
+  if (direct?.userName) {
+    return redirect(withLang(`/author/${encodeURIComponent(direct.userName)}`, lang))
+  }
+
+  const result = await searchAuthors(key)
+  const exact = result.authors.find((author) => {
+    const normalizedKey = key.toLocaleLowerCase()
+    return (
+      author.userName?.toLocaleLowerCase() === normalizedKey ||
+      author.displayName?.toLocaleLowerCase() === normalizedKey
+    )
+  })
+
+  if (exact?.userName) {
+    return redirect(withLang(`/author/${encodeURIComponent(exact.userName)}`, lang))
+  }
+
+  if (result.authors.length === 1 && result.authors[0].userName) {
+    return redirect(withLang(`/author/${encodeURIComponent(result.authors[0].userName)}`, lang))
+  }
+
+  return respond(searchView({ query: key, authorResult: result, lang, mode: 'authors' }))
+}
+
+async function handleAuthor(userName, lang) {
+  const author = await getAuthorByUserName(userName)
+
+  if (!author) {
+    return respond(errorView({ messageKey: 'noSearchResults', status: 404, lang }))
+  }
+
+  return respond(searchView({ query: author.displayName || author.userName, author, lang, mode: 'author' }))
+}
+
+async function handleChannel(shortHash, lang) {
   const channel = await getChannelArticles(shortHash)
 
   if (!channel) {
-    return respond(errorView('Channel not found', 404))
+    return respond(errorView({ messageKey: 'channelNotFound', status: 404, lang }))
   }
 
-  return respond(channelView({ channel }))
+  return respond(channelView({ channel, lang }))
 }
 
-async function handleArticleLookup(input) {
+async function handleArticleLookup(input, lang) {
   const identifier = identifyArticleInput(input)
 
   if (identifier.type === 'empty') {
-    return respond(homeView({ error: 'Enter a Matters article URL or hash.' }))
+    const feed = await getHomeFeed()
+    return respond(homeView({ ...feed, lang, errorKey: 'enterArticle' }))
   }
 
   if (identifier.type === 'unknown') {
-    return respond(homeView({ value: input, error: 'Input format is not recognized.' }))
+    return respond(homeView({ lang, value: input, error: 'Input format is not recognized.' }))
   }
 
   if (identifier.type === 'cid') {
-    return redirect(`/ipfs/${encodeURIComponent(identifier.value)}`)
+    return redirect(withLang(`/ipfs/${encodeURIComponent(identifier.value)}`, lang))
   }
 
   const article = await getArticleByIdentifier(identifier)
 
   if (!article) {
-    return respond(errorView('Article not found', 404))
+    return respond(errorView({ messageKey: 'articleNotFound', status: 404, lang }))
   }
 
   if (article.state && article.state !== 'active') {
-    return respond(errorView('Article is not active', 403))
+    return respond(errorView({ messageKey: 'articleNotActive', status: 403, lang }))
   }
 
   if (article.access?.type && article.access.type !== 'public') {
-    return respond(errorView('Article is not public', 403))
+    return respond(errorView({ messageKey: 'articleNotPublic', status: 403, lang }))
   }
 
   const html = sanitizeArticleHtml(article.contents?.html || '')
-  return respond(articleView({ article, html, sourceInput: input }))
+  return respond(articleView({ article, html, sourceInput: input, lang }))
 }
 
-async function handleIpfs(cid) {
+async function handleIpfs(cid, lang) {
   try {
     const upstream = await fetchIpfsCid(cid)
     const contentType = upstream.headers.get('content-type') || 'application/octet-stream'
@@ -158,24 +215,24 @@ async function handleIpfs(cid) {
       body: Buffer.from(await upstream.arrayBuffer()),
     })
   } catch {
-    return respond(errorView('IPFS content is unavailable from configured gateways.', 502))
+    return respond(errorView({ messageKey: 'ipfsUnavailable', status: 502, lang }))
   }
 }
 
-async function handleImageProxy(sourceUrl) {
+async function handleImageProxy(sourceUrl, lang) {
   if (!sourceUrl) {
-    return respond(errorView('Missing image URL', 400))
+    return respond(errorView({ message: 'Missing image URL', status: 400, lang }))
   }
 
   let parsed
   try {
     parsed = new URL(sourceUrl)
   } catch {
-    return respond(errorView('Invalid image URL', 400))
+    return respond(errorView({ message: 'Invalid image URL', status: 400, lang }))
   }
 
   if (!['http:', 'https:'].includes(parsed.protocol)) {
-    return respond(errorView('Unsupported image URL', 400))
+    return respond(errorView({ message: 'Unsupported image URL', status: 400, lang }))
   }
 
   const controller = new AbortController()
@@ -188,17 +245,17 @@ async function handleImageProxy(sourceUrl) {
     })
 
     if (!upstream.ok) {
-      return respond(errorView('Image is unavailable', 502))
+      return respond(errorView({ message: 'Image is unavailable', status: 502, lang }))
     }
 
     const contentLength = Number(upstream.headers.get('content-length') || 0)
     if (contentLength > config.imageProxyMaxBytes) {
-      return respond(errorView('Image is too large', 413))
+      return respond(errorView({ message: 'Image is too large', status: 413, lang }))
     }
 
     const contentType = upstream.headers.get('content-type') || ''
     if (!contentType.startsWith('image/')) {
-      return respond(errorView('Remote resource is not an image', 415))
+      return respond(errorView({ message: 'Remote resource is not an image', status: 415, lang }))
     }
 
     return respond({
@@ -210,10 +267,19 @@ async function handleImageProxy(sourceUrl) {
       body: Buffer.from(await upstream.arrayBuffer()),
     })
   } catch {
-    return respond(errorView('Image proxy failed', 502))
+    return respond(errorView({ message: 'Image proxy failed', status: 502, lang }))
   } finally {
     clearTimeout(timeout)
   }
+}
+
+function withLang(path, lang) {
+  if (lang !== 'zh-Hans') {
+    return path
+  }
+
+  const separator = path.includes('?') ? '&' : '?'
+  return `${path}${separator}lang=zh-Hans`
 }
 
 function redirect(location) {
@@ -242,7 +308,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       res.writeHead(response.status, response.headers)
       res.end(response.body)
     } catch {
-      const response = respond(errorView('Internal server error', 500))
+      const response = respond(errorView({ message: 'Internal server error', status: 500 }))
       res.writeHead(response.status, response.headers)
       res.end(response.body)
     }
