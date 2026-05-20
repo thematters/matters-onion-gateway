@@ -91,20 +91,22 @@ a {
 
 .home-hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
-  gap: 32px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: 40px;
   align-items: start;
   padding-bottom: 32px;
   border-bottom: 1px solid var(--line);
 }
 
 .hero-copy {
-  max-width: 560px;
+  max-width: 640px;
 }
 
 .hero-art {
   margin: 0;
   align-self: center;
+  justify-self: end;
+  width: min(100%, 360px);
   aspect-ratio: 1 / 1;
   border-radius: 8px;
   overflow: hidden;
@@ -363,12 +365,26 @@ button:hover,
   padding-bottom: 22px;
 }
 
-.lookup-hint,
 .why-link {
   margin: 10px 0 0;
   color: var(--muted);
   font-size: 14px;
   line-height: 22px;
+}
+
+.lookup-examples {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 22px;
+  list-style: none;
+}
+
+.lookup-examples li {
+  overflow-wrap: anywhere;
 }
 
 .meta,
@@ -444,7 +460,7 @@ button:hover,
   padding: 8px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 860px) {
   .site-header {
     align-items: flex-start;
     flex-direction: column;
@@ -453,6 +469,11 @@ button:hover,
   .home-hero {
     grid-template-columns: 1fr;
     min-height: auto;
+  }
+
+  .hero-art {
+    justify-self: start;
+    width: min(100%, 360px);
   }
 
   .lookup-row {

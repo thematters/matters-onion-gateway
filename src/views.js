@@ -39,7 +39,6 @@ export function homeView({
   lang = languages.traditional,
 } = {}) {
   const t = getMessages(lang)
-  const placeholder = discoverPlaceholder({ t, articles, channels })
 
   return layout({
     title: t.siteName,
@@ -52,10 +51,10 @@ export function homeView({
     ${langField(lang)}
     <label for="search-q">${escapeHtml(t.articleLookup)}</label>
     <div class="lookup-row">
-      <input id="search-q" name="q" value="${escapeAttr(value)}" placeholder="${escapeAttr(placeholder)}" autocomplete="off" autofocus>
+      <input id="search-q" name="q" value="${escapeAttr(value)}" placeholder="hi176" autocomplete="off" autofocus>
       <button type="submit">${escapeHtml(t.discover)}</button>
     </div>
-    <p class="lookup-hint">${escapeHtml(exampleText(t.discoverExamples))}</p>
+    <ul class="lookup-examples">${exampleList(t.discoverExamples)}</ul>
   </form>
   ${searchErrorKey ? `<p class="error">${escapeHtml(t[searchErrorKey])}</p>` : ''}
   ${authorErrorKey ? `<p class="error">${escapeHtml(t[authorErrorKey])}</p>` : ''}
@@ -66,20 +65,20 @@ export function homeView({
   <figure class="hero-art"><img src="/images/onion-hero-square.jpg" alt=""></figure>
 </section>
 
-${articles.length ? `<section class="section">
-  <div class="section-heading">
-    <p class="eyebrow">${escapeHtml(t.latestPublicArticles)}</p>
-    <h2>${escapeHtml(t.channelDerivedLatest)}</h2>
-  </div>
-  <div class="article-list">${articles.map((article) => articleCard(article, lang)).join('')}</div>
-</section>` : ''}
-
 ${channels.length ? `<section class="section">
   <div class="section-heading">
     <p class="eyebrow">${escapeHtml(t.publicChannels)}</p>
     <h2>${escapeHtml(t.browseByChannel)}</h2>
   </div>
   <div class="channel-list">${channels.map((channel) => channelLink(channel, lang)).join('')}</div>
+</section>` : ''}
+
+${articles.length ? `<section class="section">
+  <div class="section-heading">
+    <p class="eyebrow">${escapeHtml(t.latestPublicArticles)}</p>
+    <h2>${escapeHtml(t.channelDerivedLatest)}</h2>
+  </div>
+  <div class="article-list">${articles.map((article) => articleCard(article, lang)).join('')}</div>
 </section>` : ''}`,
   })
 }
@@ -408,18 +407,10 @@ function langField(lang) {
   return isDefaultLanguage(lang) ? '' : `<input type="hidden" name="lang" value="${escapeAttr(lang)}">`
 }
 
-function discoverPlaceholder({ t, articles, channels }) {
-  const dynamicExamples = [
-    articles[0]?.author?.userName,
-    articles[0]?.title,
-    channels[0]?.title,
-  ].filter(Boolean)
-  const examples = [...dynamicExamples, ...t.discoverExamples].filter(Boolean)
-  return examples[0] || t.searchPlaceholder
-}
-
-function exampleText(examples) {
-  return examples.slice(0, 4).join(' · ')
+function exampleList(examples) {
+  return examples
+    .map((example) => `<li>${escapeHtml(example)}</li>`)
+    .join('')
 }
 
 function hashRow(label, value) {
