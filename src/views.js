@@ -63,7 +63,7 @@ export function homeView({
   ${error ? `<p class="error">${escapeHtml(error)}</p>` : ''}
   <p class="why-link"><a href="${href('/why-onion', lang)}">${escapeHtml(t.whyOnionCta)}</a></p>
 </div>
-  <figure class="hero-art"><img src="/images/onion-hero.jpg" alt=""></figure>
+  <figure class="hero-art"><img src="/images/onion-hero-square.jpg" alt=""></figure>
 </section>
 
 ${articles.length ? `<section class="section">

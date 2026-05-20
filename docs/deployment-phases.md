@@ -31,7 +31,7 @@ Work:
 - Add anonymous author search and author article lists
 - Add public channel article lists
 - Add Traditional Chinese, Simplified Chinese, and English UI text
-- Add local static hero illustration with the onion cabin, erased snow footprints, and a few flying white doves as one integrated scene
+- Add local square static hero illustration in the Matters RSS / Studio announcement visual family
 - Add dedicated `/why-onion` privacy explanation page
 - Add article URL parser
 - Add article lookup page

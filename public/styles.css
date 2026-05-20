@@ -105,7 +105,7 @@ a {
 .hero-art {
   margin: 0;
   align-self: center;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 1 / 1;
   border-radius: 8px;
   overflow: hidden;
   background: var(--accent-soft);

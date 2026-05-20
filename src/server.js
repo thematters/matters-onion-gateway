@@ -50,14 +50,17 @@ export async function handleRequest(request) {
     })
   }
 
-  if (url.pathname === '/images/onion-hero.jpg') {
+  if (url.pathname === '/images/onion-hero.jpg' || url.pathname === '/images/onion-hero-square.jpg') {
+    const fileName = url.pathname.endsWith('onion-hero-square.jpg')
+      ? 'onion-hero-square.jpg'
+      : 'onion-hero.jpg'
     return respond({
       status: 200,
       headers: {
         'content-type': 'image/jpeg',
         'cache-control': 'public, max-age=86400',
       },
-      body: await readFile(join(publicDir, 'images', 'onion-hero.jpg')),
+      body: await readFile(join(publicDir, 'images', fileName)),
     })
   }
 
