@@ -28,17 +28,37 @@ a {
   color: var(--accent-strong);
 }
 
-.page {
-  width: min(100% - 32px, 860px);
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(100% - 32px, 1120px);
   margin: 0 auto;
-  padding: 24px 0 72px;
+  padding: 16px 0;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.site-brand {
+  color: var(--text);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.page {
+  width: min(100% - 32px, 1120px);
+  margin: 0 auto;
+  padding: 12px 0 72px;
 }
 
 .language-nav {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-bottom: 16px;
 }
 
 .language-nav a {
@@ -61,8 +81,38 @@ a {
 .article {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 16px;
   padding: 28px;
+}
+
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+  gap: 32px;
+  align-items: center;
+  min-height: 520px;
+  overflow: hidden;
+}
+
+.hero-copy {
+  max-width: 560px;
+}
+
+.hero-art {
+  margin: 0;
+  align-self: stretch;
+  min-height: 360px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--accent-soft);
+}
+
+.hero-art img {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  object-fit: cover;
+  display: block;
 }
 
 .compact h1 {
@@ -80,7 +130,7 @@ a {
 
 h1 {
   margin: 0 0 12px;
-  font-size: clamp(2rem, 6vw, 3.6rem);
+  font-size: clamp(2.6rem, 7vw, 5.2rem);
   line-height: 1.05;
 }
 
@@ -172,6 +222,13 @@ button:hover,
   margin-top: 24px;
 }
 
+.intro-section {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px;
+}
+
 .section-heading {
   margin-bottom: 12px;
 }
@@ -181,14 +238,22 @@ button:hover,
   gap: 10px;
 }
 
-.article-card {
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.article-card,
+.info-card {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 16px;
 }
 
-.article-card p {
+.article-card p,
+.info-card p {
   margin: 8px 0 0;
 }
 
@@ -355,6 +420,21 @@ button:hover,
 }
 
 @media (max-width: 720px) {
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .home-hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .hero-art,
+  .hero-art img {
+    min-height: 260px;
+  }
+
   .lookup-row {
     flex-direction: column;
   }
@@ -364,6 +444,10 @@ button:hover,
   }
 
   .channel-list {
+    grid-template-columns: 1fr;
+  }
+
+  .info-grid {
     grid-template-columns: 1fr;
   }
 

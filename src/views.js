@@ -2,6 +2,8 @@ import { escapeAttr, escapeHtml } from './escape.js'
 import { getMessages, isSimplified, languages } from './i18n.js'
 
 export function layout({ title, body, status = 200, lang = languages.traditional }) {
+  const t = getMessages(lang)
+
   return {
     status,
     headers: { 'content-type': 'text/html; charset=utf-8' },
@@ -14,8 +16,11 @@ export function layout({ title, body, status = 200, lang = languages.traditional
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <main class="page">
+  <header class="site-header">
+    <a class="site-brand" href="${href('/', lang)}">${escapeHtml(t.siteName)}</a>
     ${languageNav(lang)}
+  </header>
+  <main class="page">
     ${body}
   </main>
 </body>
@@ -36,40 +41,35 @@ export function homeView({
   const t = getMessages(lang)
 
   return layout({
-    title: 'Matters Onion Reader',
+    title: t.siteName,
     lang,
-    body: `<section class="hero">
-  <p class="eyebrow">${escapeHtml(t.anonymousGateway)}</p>
-  <h1>Matters Onion Reader</h1>
-  <p class="lead">${escapeHtml(t.intro)}</p>
-  <form class="lookup" action="/search" method="get">
+    body: `<section class="hero home-hero">
+  <div class="hero-copy">
+    <p class="eyebrow">${escapeHtml(t.anonymousGateway)}</p>
+    <h1>${escapeHtml(t.siteName)}</h1>
+    <p class="lead">${escapeHtml(t.intro)}</p>
+    <form class="lookup primary-lookup" action="/discover" method="get">
     ${langField(lang)}
-    <label for="search-q">${escapeHtml(t.searchArticles)}</label>
+    <label for="search-q">${escapeHtml(t.articleLookup)}</label>
     <div class="lookup-row">
-      <input id="search-q" name="q" placeholder="${escapeAttr(t.searchPlaceholder)}" autocomplete="off" autofocus>
-      <button type="submit">${escapeHtml(t.search)}</button>
+      <input id="search-q" name="q" value="${escapeAttr(value)}" placeholder="${escapeAttr(t.discoverPlaceholder)}" autocomplete="off" autofocus>
+      <button type="submit">${escapeHtml(t.discover)}</button>
     </div>
   </form>
   ${searchErrorKey ? `<p class="error">${escapeHtml(t[searchErrorKey])}</p>` : ''}
-  <form class="lookup" action="/author" method="get">
-    ${langField(lang)}
-    <label for="author-q">${escapeHtml(t.searchAuthors)}</label>
-    <div class="lookup-row">
-      <input id="author-q" name="q" placeholder="${escapeAttr(t.searchAuthorsPlaceholder)}" autocomplete="off">
-      <button type="submit">${escapeHtml(t.search)}</button>
-    </div>
-  </form>
   ${authorErrorKey ? `<p class="error">${escapeHtml(t[authorErrorKey])}</p>` : ''}
-  <form class="lookup" action="/article" method="get">
-    ${langField(lang)}
-    <label for="q">${escapeHtml(t.articleLookup)}</label>
-    <div class="lookup-row">
-      <input id="q" name="q" value="${escapeAttr(value)}" placeholder="https://matters.town/a/..." autocomplete="off">
-      <button type="submit">${escapeHtml(t.open)}</button>
-    </div>
-  </form>
   ${errorKey ? `<p class="error">${escapeHtml(t[errorKey])}</p>` : ''}
   ${error ? `<p class="error">${escapeHtml(error)}</p>` : ''}
+</div>
+  <figure class="hero-art"><img src="/images/onion-hero.jpg" alt=""></figure>
+</section>
+
+<section class="section intro-section">
+  <div class="section-heading">
+    <p class="eyebrow">${escapeHtml(t.anonymousGateway)}</p>
+    <h2>${escapeHtml(t.whyOnion)}</h2>
+  </div>
+  <div class="info-grid">${t.infoBlocks.map(infoBlock).join('')}</div>
 </section>
 
 ${articles.length ? `<section class="section">
@@ -87,6 +87,50 @@ ${channels.length ? `<section class="section">
   </div>
   <div class="channel-list">${channels.map((channel) => channelLink(channel, lang)).join('')}</div>
 </section>` : ''}`,
+  })
+}
+
+export function discoverView({
+  query,
+  articleResult,
+  authorResult,
+  lang = languages.traditional,
+}) {
+  const t = getMessages(lang)
+  const articles = articleResult.articles || []
+  const authors = authorResult.authors || []
+
+  return layout({
+    title: `${t.discover} ${query}`,
+    lang,
+    body: `<section class="hero compact">
+  <nav class="topnav"><a href="${href('/', lang)}">${escapeHtml(t.home)}</a></nav>
+  <p class="eyebrow">${escapeHtml(t.discover)}</p>
+  <h1>${escapeHtml(query)}</h1>
+  <p class="lead">${escapeHtml(t.summaryDiscover(articles.length, authors.length))}</p>
+  <form class="lookup primary-lookup" action="/discover" method="get">
+    ${langField(lang)}
+    <label for="q">${escapeHtml(t.searchAgain)}</label>
+    <div class="lookup-row">
+      <input id="q" name="q" value="${escapeAttr(query)}" autocomplete="off">
+      <button type="submit">${escapeHtml(t.discover)}</button>
+    </div>
+  </form>
+</section>
+${authors.length ? `<section class="section">
+  <div class="section-heading">
+    <p class="eyebrow">${escapeHtml(t.searchAuthors)}</p>
+    <h2>${escapeHtml(t.searchAuthorsPlaceholder)}</h2>
+  </div>
+  <div class="author-list">${authors.map((item) => authorCard(item, lang)).join('')}</div>
+</section>` : ''}
+<section class="section">
+  <div class="section-heading">
+    <p class="eyebrow">${escapeHtml(t.searchArticles)}</p>
+    <h2>${escapeHtml(t.latestPublicArticles)}</h2>
+  </div>
+  ${articles.length ? `<div class="article-list">${articles.map((article) => articleCard(article, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noReadableArticles)}</p>`}
+</section>`,
   })
 }
 
@@ -170,12 +214,12 @@ export function searchView({
   <p class="eyebrow">${escapeHtml(t.searchArticles)}</p>
   <h1>${escapeHtml(query)}</h1>
   <p class="lead">${escapeHtml(t.summarySearch(count, result.articles.length))}</p>
-  <form class="lookup" action="/search" method="get">
+  <form class="lookup" action="/discover" method="get">
     ${langField(lang)}
     <label for="q">${escapeHtml(t.searchAgain)}</label>
     <div class="lookup-row">
       <input id="q" name="q" value="${escapeAttr(query)}" autocomplete="off">
-      <button type="submit">${escapeHtml(t.search)}</button>
+      <button type="submit">${escapeHtml(t.discover)}</button>
     </div>
   </form>
 </section>
@@ -248,6 +292,13 @@ function authorSearchView({ query, result, lang }) {
   ${result.authors.length ? `<div class="author-list">${result.authors.map((item) => authorCard(item, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noSearchResults)}</p>`}
 </section>`,
   })
+}
+
+function infoBlock(block) {
+  return `<article class="info-card">
+  <h3>${escapeHtml(block.title)}</h3>
+  <p>${escapeHtml(block.body)}</p>
+</article>`
 }
 
 function authorView({ author, lang }) {

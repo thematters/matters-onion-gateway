@@ -118,10 +118,11 @@ Gateway renders links to sanitized article pages
 ```
 
 ```text
-User searches an author ID or display name
-Gateway first tries user(input: { userName, userNameCaseIgnore: true })
-Gateway falls back to anonymous search(input: { type: User, record: false })
-Gateway renders author profile metadata and public article links
+User uses the single discovery field
+Gateway parses article URLs, short hashes, media hashes, and IPFS CIDs first
+Gateway tries exact author lookup second
+Gateway falls back to anonymous article and author search
+Gateway renders public article and author results
 ```
 
 ### Localization
@@ -141,6 +142,7 @@ The frontend uses the `thematters/design-system` static consumption model:
 - Keep one server-rendered HTML app
 - Avoid React runtime and bundling for the onion MVP
 - Prefer Button, TextField, Avatar, and ArticleCard patterns that can be represented with static HTML/CSS
+- Use Matters Studio prompt guidance for text-free editorial hero illustration assets
 
 ## Data Storage
 
@@ -163,6 +165,7 @@ Forbidden storage:
 
 ```text
 GET  /
+GET  /discover
 GET  /search
 GET  /author
 GET  /author/:userName

@@ -24,6 +24,8 @@ The MVP is acceptable when the following criteria are met.
 ## Article Reading
 
 - Home page lists public articles without requiring a known Matters URL
+- Home page has one discovery field for articles, authors, keywords, and IPFS CIDs
+- Home page explains why an onion entrance helps privacy and safety
 - User can search public articles without logging in
 - User can search authors by ID or display name without logging in
 - Author page displays public profile text and public article list when available
@@ -48,6 +50,7 @@ The MVP is acceptable when the following criteria are met.
 
 - Browser page does not load third-party JavaScript
 - Browser page does not directly load clearnet images by default
+- Hero image is served as a local static asset
 - Image proxy does not log full source URLs
 - Access logs are disabled or anonymized
 - GraphQL request bodies are not logged

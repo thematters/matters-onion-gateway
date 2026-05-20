@@ -26,10 +26,12 @@ Work:
 - Create Node app skeleton
 - Add GraphQL client
 - Add anonymous home feed from public channels
+- Add single discovery field for articles, authors, keywords, and IPFS CIDs
 - Add anonymous search with `record: false`
 - Add anonymous author search and author article lists
 - Add public channel article lists
 - Add Traditional Chinese and Simplified Chinese UI text
+- Add local static hero illustration
 - Add article URL parser
 - Add article lookup page
 - Add sanitized article page
@@ -43,6 +45,7 @@ Exit criteria:
 
 - User can open the site through Tor Browser
 - User can discover public articles from the onion home page without logging in
+- User can use one discovery field for article, author, keyword, and IPFS lookup
 - User can search public articles without logging in
 - User can search authors without logging in
 - User can use Simplified Chinese UI with `?lang=zh-Hans`

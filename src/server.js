@@ -15,7 +15,7 @@ import {
 import { resolveLanguage } from './i18n.js'
 import { fetchIpfsCid } from './ipfs.js'
 import { sanitizeArticleHtml } from './sanitize.js'
-import { articleView, channelView, errorView, homeView, searchView } from './views.js'
+import { articleView, channelView, discoverView, errorView, homeView, searchView } from './views.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const publicDir = join(__dirname, '..', 'public')
@@ -50,6 +50,17 @@ export async function handleRequest(request) {
     })
   }
 
+  if (url.pathname === '/images/onion-hero.jpg') {
+    return respond({
+      status: 200,
+      headers: {
+        'content-type': 'image/jpeg',
+        'cache-control': 'public, max-age=86400',
+      },
+      body: await readFile(join(publicDir, 'images', 'onion-hero.jpg')),
+    })
+  }
+
   if (url.pathname === '/healthz') {
     return respond({
       status: 200,
@@ -58,8 +69,19 @@ export async function handleRequest(request) {
     })
   }
 
+  if (url.pathname === '/favicon.ico') {
+    return respond({
+      status: 204,
+      body: '',
+    })
+  }
+
   if (url.pathname === '/article') {
     return handleArticleLookup(url.searchParams.get('q') || '', lang)
+  }
+
+  if (url.pathname === '/discover') {
+    return handleDiscover(url.searchParams.get('q') || '', lang)
   }
 
   if (url.pathname === '/search') {
@@ -114,6 +136,46 @@ async function handleSearch(query, lang) {
   return respond(searchView({ query: key, result, lang }))
 }
 
+async function handleDiscover(query, lang) {
+  const key = query.trim()
+
+  if (!key) {
+    const feed = await getHomeFeed()
+    return respond(homeView({ ...feed, lang, searchErrorKey: 'enterSearch' }))
+  }
+
+  const identifier = identifyArticleInput(key)
+
+  if (identifier.type === 'cid') {
+    return redirect(withLang(`/ipfs/${encodeURIComponent(identifier.value)}`, lang))
+  }
+
+  if (identifier.type === 'shortHash') {
+    return redirect(withLang(`/article/${encodeURIComponent(identifier.value)}`, lang))
+  }
+
+  if (identifier.type === 'mediaHash') {
+    return redirect(withLang(`/article?q=${encodeURIComponent(key)}`, lang))
+  }
+
+  const direct = await getAuthorByUserName(key)
+  if (direct?.userName) {
+    return redirect(withLang(`/author/${encodeURIComponent(direct.userName)}`, lang))
+  }
+
+  const [articleResult, authorResult] = await Promise.all([
+    searchArticles(key),
+    searchAuthors(key),
+  ])
+  const exact = findExactAuthor(authorResult.authors, key)
+
+  if (exact?.userName) {
+    return redirect(withLang(`/author/${encodeURIComponent(exact.userName)}`, lang))
+  }
+
+  return respond(discoverView({ query: key, articleResult, authorResult, lang }))
+}
+
 async function handleAuthorSearch(query, lang) {
   const key = query.trim()
 
@@ -128,13 +190,7 @@ async function handleAuthorSearch(query, lang) {
   }
 
   const result = await searchAuthors(key)
-  const exact = result.authors.find((author) => {
-    const normalizedKey = key.toLocaleLowerCase()
-    return (
-      author.userName?.toLocaleLowerCase() === normalizedKey ||
-      author.displayName?.toLocaleLowerCase() === normalizedKey
-    )
-  })
+  const exact = findExactAuthor(result.authors, key)
 
   if (exact?.userName) {
     return redirect(withLang(`/author/${encodeURIComponent(exact.userName)}`, lang))
@@ -145,6 +201,14 @@ async function handleAuthorSearch(query, lang) {
   }
 
   return respond(searchView({ query: key, authorResult: result, lang, mode: 'authors' }))
+}
+
+function findExactAuthor(authors, key) {
+  const normalizedKey = key.toLocaleLowerCase()
+  return authors.find((author) => (
+    author.userName?.toLocaleLowerCase() === normalizedKey ||
+    author.displayName?.toLocaleLowerCase() === normalizedKey
+  ))
 }
 
 async function handleAuthor(userName, lang) {
