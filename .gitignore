@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Runtime secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+hs_ed25519_secret_key
+
+# Logs
+*.log
+logs/
+
+# Local state
+.DS_Store
+dist/
+build/
+coverage/
+.cache/
+tmp/
+
+# Databases
+*.sqlite
+*.sqlite3
+*.db

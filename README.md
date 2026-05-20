@@ -1,0 +1,74 @@
+# Matters Onion Gateway
+
+Matters Onion Gateway is a lightweight Tor onion access layer for Matters.
+
+It is designed to be simple, cheap, and sustainable. It does not mirror the full Matters site. It provides a minimal onion interface for safer login, article reading, and IPFS-aware content verification by using existing Matters GraphQL and IPFS support.
+
+## Goals
+
+- Provide an onion-only access path for Matters readers
+- Allow users to log in without loading the clearnet Matters web app
+- Let users open articles by Matters URL, short hash, media hash, or IPFS CID
+- Prefer existing Matters IPFS fingerprints when available
+- Proxy or block external resources to reduce reader network leakage
+- Keep infrastructure small enough to run on one low-cost AWS EC2 instance
+
+## Non-goals
+
+- No full-site mirror
+- No full-text search engine
+- No clone of matters-web
+- No publishing, editing, payment, notification, or wallet workflow in MVP
+- No long-term storage of user credentials or access tokens
+- No storage of private user content
+- No promise of latest global content sync
+
+## MVP
+
+The first version should include only:
+
+- Login and logout
+- Session handling with short-lived secure cookies
+- Article lookup and sanitized reading page
+- IPFS CID display and gateway adapter
+- My articles
+- My bookmarks
+- Image proxy or remote image blocking
+- Basic health check
+- Minimal deployment scripts and docs
+
+## Architecture
+
+```text
+Tor Browser
+  -> .onion address
+  -> AWS EC2
+     -> Tor daemon
+     -> Node app
+     -> optional local IPFS gateway
+     -> Matters GraphQL API
+```
+
+Cloudflare is optional and should only support clearnet landing pages, DNS, status pages, and non-sensitive cache storage. It should not host the primary onion service.
+
+## Repository Status
+
+This repository currently contains planning, deployment, and acceptance documents. Runtime code should be added only after the MVP scope is locked.
+
+## Documents
+
+- [Architecture](docs/architecture.md)
+- [Deployment Phases](docs/deployment-phases.md)
+- [Acceptance Criteria](docs/acceptance-criteria.md)
+- [Security and Privacy](docs/security-and-privacy.md)
+- [Operations](docs/operations.md)
+- [GraphQL and IPFS Notes](docs/graphql-ipfs-notes.md)
+- [Open Questions](docs/open-questions.md)
+
+## Cost Principle
+
+The default deployment target is one small EC2 instance. Avoid services, databases, queues, and caches until there is a concrete need.
+
+## Sustainability Principle
+
+The gateway should remain understandable by one maintainer. Each new feature must justify its operational cost, privacy risk, and user value.

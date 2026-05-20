@@ -1,0 +1,22 @@
+[Unit]
+Description=Matters Onion Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=matters-onion
+Group=matters-onion
+WorkingDirectory=/opt/matters-onion-gateway/current
+EnvironmentFile=/etc/matters-onion-gateway/env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/matters-onion-gateway /var/cache/matters-onion-gateway
+
+[Install]
+WantedBy=multi-user.target

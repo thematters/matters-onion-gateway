@@ -1,0 +1,5 @@
+# Example only. Do not commit real onion service keys.
+
+HiddenServiceDir /var/lib/tor/matters-onion-gateway/
+HiddenServiceVersion 3
+HiddenServicePort 80 127.0.0.1:3000
