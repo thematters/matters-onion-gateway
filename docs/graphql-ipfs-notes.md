@@ -4,6 +4,14 @@
 
 Matters exposes GraphQL through the Matters server endpoint. The gateway should centralize all operations and keep them small.
 
+Anonymous discovery uses only read queries:
+
+- `channels` for active public channels and sampled public article lists
+- `channel(input)` for a single public channel page
+- `search(input: { type: Article, record: false })` for keyword search
+
+The gateway does not maintain its own search index. It filters returned articles to active public articles before rendering links.
+
 Article fields expected for MVP:
 
 ```graphql

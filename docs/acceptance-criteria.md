@@ -17,10 +17,14 @@ The MVP is acceptable when the following criteria are met.
 - No session cookie is issued
 - No Matters access token is required
 - No mutation is sent to Matters GraphQL
+- Search requests use Matters GraphQL with `record: false`
 - No credentials are requested or stored
 
 ## Article Reading
 
+- Home page lists public articles without requiring a known Matters URL
+- User can search public articles without logging in
+- User can browse public channel article lists without logging in
 - User can open an article by Matters URL
 - User can open an article by short hash
 - Article page displays title, author, summary, timestamps, license, and IPFS identifiers when available

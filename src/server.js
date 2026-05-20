@@ -4,10 +4,15 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { config } from './config.js'
 import { identifyArticleInput } from './identify.js'
-import { getArticleByIdentifier } from './graphql.js'
+import {
+  getArticleByIdentifier,
+  getChannelArticles,
+  getHomeFeed,
+  searchArticles,
+} from './graphql.js'
 import { fetchIpfsCid } from './ipfs.js'
 import { sanitizeArticleHtml } from './sanitize.js'
-import { articleView, errorView, homeView } from './views.js'
+import { articleView, channelView, errorView, homeView, searchView } from './views.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const publicDir = join(__dirname, '..', 'public')
@@ -29,7 +34,7 @@ export async function handleRequest(request) {
   }
 
   if (url.pathname === '/') {
-    return respond(homeView())
+    return handleHome()
   }
 
   if (url.pathname === '/styles.css') {
@@ -53,6 +58,15 @@ export async function handleRequest(request) {
     return handleArticleLookup(url.searchParams.get('q') || '')
   }
 
+  if (url.pathname === '/search') {
+    return handleSearch(url.searchParams.get('q') || '')
+  }
+
+  const channelPathMatch = url.pathname.match(/^\/channel\/([^/]+)$/)
+  if (channelPathMatch) {
+    return handleChannel(channelPathMatch[1])
+  }
+
   const articlePathMatch = url.pathname.match(/^\/article\/([^/]+)$/)
   if (articlePathMatch) {
     return handleArticleLookup(articlePathMatch[1])
@@ -68,6 +82,33 @@ export async function handleRequest(request) {
   }
 
   return respond(errorView('Not found', 404))
+}
+
+async function handleHome() {
+  const feed = await getHomeFeed()
+  return respond(homeView(feed))
+}
+
+async function handleSearch(query) {
+  const key = query.trim()
+
+  if (!key) {
+    const feed = await getHomeFeed()
+    return respond(homeView({ ...feed, searchError: 'Enter a search term.' }))
+  }
+
+  const result = await searchArticles(key)
+  return respond(searchView({ query: key, result }))
+}
+
+async function handleChannel(shortHash) {
+  const channel = await getChannelArticles(shortHash)
+
+  if (!channel) {
+    return respond(errorView('Channel not found', 404))
+  }
+
+  return respond(channelView({ channel }))
 }
 
 async function handleArticleLookup(input) {

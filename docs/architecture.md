@@ -100,6 +100,23 @@ Gateway renders sanitized HTML fallback
 Gateway proxies or blocks external media
 ```
 
+### Anonymous Discovery
+
+```text
+User opens onion home page
+Gateway queries public Matters channels
+Gateway samples channel article lists
+Gateway deduplicates and sorts sampled public articles by creation time
+Gateway renders links to sanitized article pages
+```
+
+```text
+User searches a keyword
+Gateway sends anonymous Matters GraphQL search with record=false
+Gateway filters non-public or inactive articles
+Gateway renders links to sanitized article pages
+```
+
 ## Data Storage
 
 MVP should avoid persistent storage.
@@ -121,6 +138,8 @@ Forbidden storage:
 
 ```text
 GET  /
+GET  /search
+GET  /channel/:shortHash
 GET  /article
 GET  /article/:shortHash
 GET  /ipfs/:cid

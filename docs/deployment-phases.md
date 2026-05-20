@@ -25,6 +25,9 @@ Work:
 
 - Create Node app skeleton
 - Add GraphQL client
+- Add anonymous home feed from public channels
+- Add anonymous search with `record: false`
+- Add public channel article lists
 - Add article URL parser
 - Add article lookup page
 - Add sanitized article page
@@ -37,6 +40,8 @@ Work:
 Exit criteria:
 
 - User can open the site through Tor Browser
+- User can discover public articles from the onion home page without logging in
+- User can search public articles without logging in
 - User can paste a Matters URL and read the article
 - Page does not load third-party JavaScript
 - Remote images are proxied or blocked
@@ -93,5 +98,5 @@ These should not be implemented in the first release:
 - Bookmarks
 - Comments mutation
 - Full-site crawler
-- Full-text search
+- Independent full-text search index
 - Global article sync

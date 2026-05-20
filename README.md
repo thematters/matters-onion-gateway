@@ -7,6 +7,7 @@ It is designed to be simple, cheap, and sustainable. It does not mirror the full
 ## Goals
 
 - Provide an onion-friendly read-only path for Matters readers
+- Provide anonymous discovery through public search, public channels, and a lightweight home feed
 - Let users open articles by Matters URL, short hash, media hash, or IPFS CID
 - Prefer existing Matters IPFS fingerprints when available
 - Proxy or block external resources to reduce reader network leakage
@@ -15,7 +16,7 @@ It is designed to be simple, cheap, and sustainable. It does not mirror the full
 ## Non-goals
 
 - No full-site mirror
-- No full-text search engine
+- No independent full-text search engine
 - No clone of matters-web
 - No login in MVP
 - No bookmarks or comments in MVP
@@ -28,6 +29,9 @@ It is designed to be simple, cheap, and sustainable. It does not mirror the full
 
 The first version should include only:
 
+- Anonymous home page backed by public Matters channel data
+- Anonymous public article search backed by Matters GraphQL
+- Public channel article lists
 - Article lookup and sanitized reading page
 - IPFS CID display and gateway adapter
 - Image proxy or remote image blocking
@@ -60,6 +64,16 @@ npm start
 ```
 
 Open `http://127.0.0.1:3000`.
+
+Useful local routes:
+
+```text
+GET /
+GET /search?q=matters
+GET /channel/{shortHash}
+GET /article/{shortHash}
+GET /healthz
+```
 
 Run tests:
 
