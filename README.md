@@ -93,7 +93,7 @@ This repo follows the vendored-copy path recommended by `thematters/design-syste
 - Pill-shaped primary buttons
 - Text field focus ring behavior
 - Lightweight ArticleCard, AuthorCard, and Avatar patterns
-- Static hero visual direction based on Matters Studio prompt rules for text-free editorial illustrations
+- Static hero visual direction based on Matters Studio prompt rules for text-free editorial illustrations, currently depicting an onion cabin, erased snow footprints, and white doves as one integrated scene
 
 React components are intentionally not imported because the onion gateway has no client-side React runtime.
 

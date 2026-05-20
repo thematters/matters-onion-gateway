@@ -31,7 +31,7 @@ Work:
 - Add anonymous author search and author article lists
 - Add public channel article lists
 - Add Traditional Chinese and Simplified Chinese UI text
-- Add local static hero illustration
+- Add local static hero illustration with the onion cabin, erased snow footprints, and flying white doves as one integrated scene
 - Add article URL parser
 - Add article lookup page
 - Add sanitized article page
