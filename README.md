@@ -9,7 +9,7 @@ It is designed to be simple, cheap, and sustainable. It does not mirror the full
 - Provide an onion-friendly read-only path for Matters readers
 - Provide anonymous discovery through public search, public channels, and a lightweight home feed
 - Provide anonymous author lookup by Matters ID or display name
-- Provide Traditional Chinese and Simplified Chinese UI text
+- Provide Traditional Chinese, Simplified Chinese, and English UI text
 - Provide a single discovery field for article URLs, IPFS CIDs, author IDs, display names, and keywords
 - Let users open articles by Matters URL, short hash, media hash, or IPFS CID
 - Prefer existing Matters IPFS fingerprints when available
@@ -36,7 +36,7 @@ The first version should include only:
 - Anonymous public article search backed by Matters GraphQL
 - Anonymous author search and author article lists backed by Matters GraphQL
 - Public channel article lists
-- A static hero illustration and privacy explanation block
+- A static hero illustration and a dedicated privacy explanation page
 - Article lookup and sanitized reading page
 - IPFS CID display and gateway adapter
 - Image proxy or remote image blocking
@@ -75,6 +75,7 @@ Useful local routes:
 ```text
 GET /
 GET /discover?q=matters
+GET /why-onion
 GET /search?q=matters
 GET /author?q=Matty
 GET /author/{userName}
@@ -83,7 +84,7 @@ GET /article/{shortHash}
 GET /healthz
 ```
 
-Add `?lang=zh-Hans` to use the Simplified Chinese interface. The default interface is Traditional Chinese unless the browser sends a Simplified Chinese `Accept-Language` header.
+Add `?lang=zh-Hans` to use the Simplified Chinese interface, or `?lang=en` to use English. The default interface is Traditional Chinese unless the browser sends a Simplified Chinese or English `Accept-Language` header.
 
 ## Design System Use
 
@@ -93,7 +94,7 @@ This repo follows the vendored-copy path recommended by `thematters/design-syste
 - Pill-shaped primary buttons
 - Text field focus ring behavior
 - Lightweight ArticleCard, AuthorCard, and Avatar patterns
-- Static hero visual direction based on Matters Studio prompt rules for text-free editorial illustrations, currently depicting an onion cabin, erased snow footprints, and white doves as one integrated scene
+- Static hero visual direction based on Matters Studio prompt rules for text-free editorial illustrations, currently depicting an onion cabin, erased snow footprints, and a few white doves as one integrated scene
 
 React components are intentionally not imported because the onion gateway has no client-side React runtime.
 

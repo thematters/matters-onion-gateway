@@ -1,15 +1,17 @@
 :root {
   color-scheme: light;
-  --bg: #f8f7fb;
-  --text: #20211f;
-  --muted: #666a60;
-  --line: #dedbea;
+  --bg: #ffffff;
+  --text: #333333;
+  --muted: #808080;
+  --line: #dddddd;
   --panel: #ffffff;
   --accent: #7258ff;
-  --accent-strong: #5840d8;
-  --accent-soft: #f1efff;
+  --accent-strong: #5a43e5;
+  --accent-soft: #f5f3ff;
   --brand-green: #c3f432;
   --danger: #9a2b2b;
+  --font-ui: PingFang TC, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-reading: Noto Serif TC, serif;
 }
 
 * {
@@ -20,8 +22,9 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.6;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 24px;
 }
 
 a {
@@ -36,23 +39,26 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: min(100% - 32px, 1120px);
+  width: min(100% - 32px, 960px);
   margin: 0 auto;
-  padding: 16px 0;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  padding: 18px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(12px);
 }
 
 .site-brand {
   color: var(--text);
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
   text-decoration: none;
 }
 
 .page {
-  width: min(100% - 32px, 1120px);
+  width: min(100% - 32px, 960px);
   margin: 0 auto;
-  padding: 12px 0 72px;
+  padding: 32px 0 72px;
 }
 
 .language-nav {
@@ -63,11 +69,12 @@ a {
 
 .language-nav a {
   border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 5px 12px;
+  border-radius: 8px;
+  padding: 4px 10px;
   background: var(--panel);
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 12px;
+  line-height: 18px;
   text-decoration: none;
 }
 
@@ -80,18 +87,15 @@ a {
 .hero,
 .article {
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 28px;
 }
 
 .home-hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
   gap: 32px;
-  align-items: center;
-  min-height: 520px;
-  overflow: hidden;
+  align-items: start;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--line);
 }
 
 .hero-copy {
@@ -102,7 +106,7 @@ a {
   margin: 0;
   align-self: center;
   aspect-ratio: 16 / 9;
-  border-radius: 18px;
+  border-radius: 8px;
   overflow: hidden;
   background: var(--accent-soft);
 }
@@ -115,49 +119,62 @@ a {
 }
 
 .compact h1 {
-  font-size: clamp(1.8rem, 5vw, 3rem);
+  font-family: var(--font-reading);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 54px;
+  letter-spacing: 1.2px;
 }
 
 .eyebrow {
   margin: 0 0 8px;
   color: var(--accent);
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
   letter-spacing: 0;
-  text-transform: uppercase;
 }
 
 h1 {
   margin: 0 0 12px;
-  font-size: clamp(2.6rem, 7vw, 5.2rem);
-  line-height: 1.05;
+  font-family: var(--font-reading);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 54px;
+  letter-spacing: 1.2px;
 }
 
 h2 {
   margin: 0 0 12px;
-  font-size: 1.15rem;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 30px;
 }
 
 h3 {
   margin: 0 0 8px;
-  font-size: 1.1rem;
-  line-height: 1.25;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
 }
 
 .lead,
 .summary {
   color: var(--muted);
-  font-size: 1.05rem;
+  font-size: 17px;
+  line-height: 1.75;
 }
 
 .lookup {
-  margin-top: 28px;
+  margin-top: 24px;
 }
 
 label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
 }
 
 .lookup-row {
@@ -170,7 +187,7 @@ input {
   flex: 1;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 12px 14px;
+  padding: 13px 14px;
   font: inherit;
   background: var(--panel);
   transition:
@@ -193,9 +210,10 @@ button,
   border-radius: 999px;
   background: var(--accent);
   color: #fff;
-  padding: 12px 16px;
-  font: inherit;
-  font-weight: 700;
+  padding: 12px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
   text-decoration: none;
   transition:
     background-color 120ms ease,
@@ -210,7 +228,7 @@ button:hover,
 
 .error {
   color: var(--danger);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .topnav {
@@ -218,14 +236,7 @@ button:hover,
 }
 
 .section {
-  margin-top: 24px;
-}
-
-.intro-section {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 28px;
+  margin-top: 32px;
 }
 
 .section-heading {
@@ -234,21 +245,26 @@ button:hover,
 
 .article-list {
   display: grid;
-  gap: 10px;
+  gap: 0;
+  border-top: 1px solid var(--line);
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
-.article-card,
 .info-card {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 16px;
+}
+
+.article-card {
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
 }
 
 .article-card p,
@@ -262,7 +278,8 @@ button:hover,
 
 .author-list {
   display: grid;
-  gap: 10px;
+  gap: 0;
+  border-top: 1px solid var(--line);
 }
 
 .author-card {
@@ -271,9 +288,8 @@ button:hover,
   gap: 14px;
   align-items: start;
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 16px;
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
 }
 
 .author-card p {
@@ -294,7 +310,7 @@ button:hover,
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-weight: 700;
+  font-weight: 600;
   overflow: hidden;
 }
 
@@ -347,6 +363,14 @@ button:hover,
   padding-bottom: 22px;
 }
 
+.lookup-hint,
+.why-link {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
 .meta,
 .muted,
 .article-footer {
@@ -370,7 +394,8 @@ button:hover,
 .hash-row span {
   display: block;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .hashes,
@@ -384,7 +409,8 @@ button:hover,
 .hash-row code {
   display: block;
   overflow-wrap: anywhere;
-  font-size: 0.9rem;
+  font-size: 14px;
+  line-height: 22px;
 }
 
 .tags {
@@ -447,7 +473,13 @@ button:hover,
 
   .hero,
   .article {
-    padding: 20px;
+    padding: 0;
+  }
+
+  h1,
+  .compact h1 {
+    font-size: 24px;
+    line-height: 36px;
   }
 
   .author-head,

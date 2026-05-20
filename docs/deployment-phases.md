@@ -30,8 +30,9 @@ Work:
 - Add anonymous search with `record: false`
 - Add anonymous author search and author article lists
 - Add public channel article lists
-- Add Traditional Chinese and Simplified Chinese UI text
-- Add local static hero illustration with the onion cabin, erased snow footprints, and flying white doves as one integrated scene
+- Add Traditional Chinese, Simplified Chinese, and English UI text
+- Add local static hero illustration with the onion cabin, erased snow footprints, and a few flying white doves as one integrated scene
+- Add dedicated `/why-onion` privacy explanation page
 - Add article URL parser
 - Add article lookup page
 - Add sanitized article page
@@ -49,6 +50,7 @@ Exit criteria:
 - User can search public articles without logging in
 - User can search authors without logging in
 - User can use Simplified Chinese UI with `?lang=zh-Hans`
+- User can use English UI with `?lang=en`
 - User can paste a Matters URL and read the article
 - Page does not load third-party JavaScript
 - Remote images are proxied or blocked

@@ -25,7 +25,7 @@ The MVP is acceptable when the following criteria are met.
 
 - Home page lists public articles without requiring a known Matters URL
 - Home page has one discovery field for articles, authors, keywords, and IPFS CIDs
-- Home page explains why an onion entrance helps privacy and safety
+- Home page links to a dedicated page explaining why an onion entrance helps privacy and safety
 - User can search public articles without logging in
 - User can search authors by ID or display name without logging in
 - Author page displays public profile text and public article list when available
@@ -82,5 +82,5 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 - Deployment phases are documented
 - Acceptance criteria are documented
 - Security and privacy boundaries are documented
-- Traditional Chinese and Simplified Chinese UI availability is documented
+- Traditional Chinese, Simplified Chinese, and English UI availability is documented
 - No real token, password, onion private key, IP address, SSH host, or account identifier is committed

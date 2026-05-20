@@ -1,5 +1,5 @@
 import { escapeAttr, escapeHtml } from './escape.js'
-import { getMessages, isSimplified, languages } from './i18n.js'
+import { getMessages, isDefaultLanguage, languages } from './i18n.js'
 
 export function layout({ title, body, status = 200, lang = languages.traditional }) {
   const t = getMessages(lang)
@@ -39,37 +39,31 @@ export function homeView({
   lang = languages.traditional,
 } = {}) {
   const t = getMessages(lang)
+  const placeholder = discoverPlaceholder({ t, articles, channels })
 
   return layout({
     title: t.siteName,
     lang,
     body: `<section class="hero home-hero">
   <div class="hero-copy">
-    <p class="eyebrow">${escapeHtml(t.anonymousGateway)}</p>
     <h1>${escapeHtml(t.siteName)}</h1>
     <p class="lead">${escapeHtml(t.intro)}</p>
     <form class="lookup primary-lookup" action="/discover" method="get">
     ${langField(lang)}
     <label for="search-q">${escapeHtml(t.articleLookup)}</label>
     <div class="lookup-row">
-      <input id="search-q" name="q" value="${escapeAttr(value)}" placeholder="${escapeAttr(t.discoverPlaceholder)}" autocomplete="off" autofocus>
+      <input id="search-q" name="q" value="${escapeAttr(value)}" placeholder="${escapeAttr(placeholder)}" autocomplete="off" autofocus>
       <button type="submit">${escapeHtml(t.discover)}</button>
     </div>
+    <p class="lookup-hint">${escapeHtml(exampleText(t.discoverExamples))}</p>
   </form>
   ${searchErrorKey ? `<p class="error">${escapeHtml(t[searchErrorKey])}</p>` : ''}
   ${authorErrorKey ? `<p class="error">${escapeHtml(t[authorErrorKey])}</p>` : ''}
   ${errorKey ? `<p class="error">${escapeHtml(t[errorKey])}</p>` : ''}
   ${error ? `<p class="error">${escapeHtml(error)}</p>` : ''}
+  <p class="why-link"><a href="${href('/why-onion', lang)}">${escapeHtml(t.whyOnionCta)}</a></p>
 </div>
   <figure class="hero-art"><img src="/images/onion-hero.jpg" alt=""></figure>
-</section>
-
-<section class="section intro-section">
-  <div class="section-heading">
-    <p class="eyebrow">${escapeHtml(t.anonymousGateway)}</p>
-    <h2>${escapeHtml(t.whyOnion)}</h2>
-  </div>
-  <div class="info-grid">${t.infoBlocks.map(infoBlock).join('')}</div>
 </section>
 
 ${articles.length ? `<section class="section">
@@ -87,6 +81,23 @@ ${channels.length ? `<section class="section">
   </div>
   <div class="channel-list">${channels.map((channel) => channelLink(channel, lang)).join('')}</div>
 </section>` : ''}`,
+  })
+}
+
+export function whyOnionView({ lang = languages.traditional } = {}) {
+  const t = getMessages(lang)
+
+  return layout({
+    title: t.whyOnion,
+    lang,
+    body: `<section class="hero compact">
+  <nav class="topnav"><a href="${href('/', lang)}">${escapeHtml(t.home)}</a></nav>
+  <h1>${escapeHtml(t.whyOnion)}</h1>
+  <p class="lead">${escapeHtml(t.whyOnionIntro)}</p>
+</section>
+<section class="section">
+  <div class="info-grid">${t.whyOnionBlocks.map(infoBlock).join('')}</div>
+</section>`,
   })
 }
 
@@ -378,22 +389,37 @@ function avatar(author, size) {
 
 function languageNav(lang) {
   return `<nav class="language-nav" aria-label="Language">
-  <a ${!isSimplified(lang) ? 'aria-current="true"' : ''} href="?lang=zh-Hant">繁體</a>
-  <a ${isSimplified(lang) ? 'aria-current="true"' : ''} href="?lang=zh-Hans">简体</a>
+  <a ${lang === languages.traditional ? 'aria-current="true"' : ''} href="?lang=zh-Hant">繁體</a>
+  <a ${lang === languages.simplified ? 'aria-current="true"' : ''} href="?lang=zh-Hans">简体</a>
+  <a ${lang === languages.english ? 'aria-current="true"' : ''} href="?lang=en">EN</a>
 </nav>`
 }
 
 function href(path, lang) {
-  if (!isSimplified(lang)) {
+  if (isDefaultLanguage(lang)) {
     return path
   }
 
   const separator = path.includes('?') ? '&' : '?'
-  return `${path}${separator}lang=zh-Hans`
+  return `${path}${separator}lang=${encodeURIComponent(lang)}`
 }
 
 function langField(lang) {
-  return isSimplified(lang) ? '<input type="hidden" name="lang" value="zh-Hans">' : ''
+  return isDefaultLanguage(lang) ? '' : `<input type="hidden" name="lang" value="${escapeAttr(lang)}">`
+}
+
+function discoverPlaceholder({ t, articles, channels }) {
+  const dynamicExamples = [
+    articles[0]?.author?.userName,
+    articles[0]?.title,
+    channels[0]?.title,
+  ].filter(Boolean)
+  const examples = [...dynamicExamples, ...t.discoverExamples].filter(Boolean)
+  return examples[0] || t.searchPlaceholder
+}
+
+function exampleText(examples) {
+  return examples.slice(0, 4).join(' · ')
 }
 
 function hashRow(label, value) {

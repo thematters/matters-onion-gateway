@@ -12,10 +12,10 @@ import {
   searchAuthors,
   searchArticles,
 } from './graphql.js'
-import { resolveLanguage } from './i18n.js'
+import { isDefaultLanguage, resolveLanguage } from './i18n.js'
 import { fetchIpfsCid } from './ipfs.js'
 import { sanitizeArticleHtml } from './sanitize.js'
-import { articleView, channelView, discoverView, errorView, homeView, searchView } from './views.js'
+import { articleView, channelView, discoverView, errorView, homeView, searchView, whyOnionView } from './views.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const publicDir = join(__dirname, '..', 'public')
@@ -82,6 +82,10 @@ export async function handleRequest(request) {
 
   if (url.pathname === '/discover') {
     return handleDiscover(url.searchParams.get('q') || '', lang)
+  }
+
+  if (url.pathname === '/why-onion') {
+    return respond(whyOnionView({ lang }))
   }
 
   if (url.pathname === '/search') {
@@ -338,12 +342,12 @@ async function handleImageProxy(sourceUrl, lang) {
 }
 
 function withLang(path, lang) {
-  if (lang !== 'zh-Hans') {
+  if (isDefaultLanguage(lang)) {
     return path
   }
 
   const separator = path.includes('?') ? '&' : '?'
-  return `${path}${separator}lang=zh-Hans`
+  return `${path}${separator}lang=${encodeURIComponent(lang)}`
 }
 
 function redirect(location) {

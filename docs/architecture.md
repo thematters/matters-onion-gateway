@@ -130,6 +130,7 @@ Gateway renders public article and author results
 ```text
 Default UI language: Traditional Chinese
 Simplified Chinese UI: ?lang=zh-Hans or zh-CN/zh-Hans Accept-Language
+English UI: ?lang=en or English Accept-Language
 Language state is carried in URLs and hidden form fields
 No language cookie or user profile is stored
 ```
@@ -143,7 +144,7 @@ The frontend uses the `thematters/design-system` static consumption model:
 - Avoid React runtime and bundling for the onion MVP
 - Prefer Button, TextField, Avatar, and ArticleCard patterns that can be represented with static HTML/CSS
 - Use Matters Studio prompt guidance for text-free editorial hero illustration assets
-- Keep the hero art as a full-scene composition, not a text-safe background plate; the current asset connects the onion cabin, erased snow footprints, and flying white doves into one privacy narrative
+- Keep the hero art as a full-scene composition, not a text-safe background plate; the current asset connects the onion cabin, erased snow footprints, and a few flying white doves into one privacy narrative
 
 ## Data Storage
 
