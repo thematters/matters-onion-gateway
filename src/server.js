@@ -64,6 +64,20 @@ export async function handleRequest(request) {
     })
   }
 
+  if (url.pathname === '/images/matters-wordmark.svg' || url.pathname === '/images/matters-mark-color.svg') {
+    const fileName = url.pathname.endsWith('matters-mark-color.svg')
+      ? 'matters-mark-color.svg'
+      : 'matters-wordmark.svg'
+    return respond({
+      status: 200,
+      headers: {
+        'content-type': 'image/svg+xml; charset=utf-8',
+        'cache-control': 'public, max-age=86400',
+      },
+      body: await readFile(join(publicDir, 'images', fileName), 'utf8'),
+    })
+  }
+
   if (url.pathname === '/healthz') {
     return respond({
       status: 200,
@@ -73,10 +87,7 @@ export async function handleRequest(request) {
   }
 
   if (url.pathname === '/favicon.ico') {
-    return respond({
-      status: 204,
-      body: '',
-    })
+    return redirect('/images/matters-mark-color.svg')
   }
 
   if (url.pathname === '/article') {

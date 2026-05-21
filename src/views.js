@@ -13,11 +13,15 @@ export function layout({ title, body, status = 200, lang = languages.traditional
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
+  <link rel="icon" href="/images/matters-mark-color.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <header class="site-header">
-    <a class="site-brand" href="${href('/', lang)}">${escapeHtml(t.siteName)}</a>
+    <a class="site-brand" href="${href('/', lang)}" aria-label="${escapeAttr(t.siteName)}">
+      <img src="/images/matters-wordmark.svg" alt="Matters">
+      <span class="site-brand-onion" aria-hidden="true">🧅</span>
+    </a>
     ${languageNav(lang)}
   </header>
   <main class="page">
@@ -54,7 +58,10 @@ export function homeView({
       <input id="search-q" name="q" value="${escapeAttr(value)}" placeholder="hi176" autocomplete="off" autofocus>
       <button type="submit">${escapeHtml(t.discover)}</button>
     </div>
-    <ul class="lookup-examples">${exampleList(t.discoverExamples)}</ul>
+    <details class="lookup-examples">
+      <summary>${escapeHtml(t.discoverExampleSummary)}</summary>
+      <ul>${exampleList(t.discoverExamples)}</ul>
+    </details>
   </form>
   ${searchErrorKey ? `<p class="error">${escapeHtml(t[searchErrorKey])}</p>` : ''}
   ${authorErrorKey ? `<p class="error">${escapeHtml(t[authorErrorKey])}</p>` : ''}
@@ -168,7 +175,13 @@ export function articleView({ article, html, sourceInput, lang = languages.tradi
     ${article.summary ? `<p class="summary">${escapeHtml(article.summary)}</p>` : ''}
   </header>
 
-  <section class="facts">
+  ${tags.length ? `<section class="tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</section>` : ''}
+
+  <section class="content">
+    ${html}
+  </section>
+
+  <section class="facts article-meta-section">
     <div><span>${escapeHtml(t.state)}</span><strong>${escapeHtml(article.state || 'unknown')}</strong></div>
     <div><span>Access</span><strong>${escapeHtml(article.access?.type || 'unknown')}</strong></div>
     <div><span>${escapeHtml(t.license)}</span><strong>${escapeHtml(article.license || 'unknown')}</strong></div>
@@ -181,12 +194,6 @@ export function articleView({ article, html, sourceInput, lang = languages.tradi
     ${hashRow('dataHash', article.dataHash)}
     ${hashRow('mediaHash', article.mediaHash)}
     ${cid ? `<p><a class="button-link" href="${href(`/ipfs/${encodeURIComponent(cid)}`, lang)}">${escapeHtml(t.openIpfs)}</a></p>` : `<p class="muted">${escapeHtml(t.noIpfsCid)}</p>`}
-  </section>
-
-  ${tags.length ? `<section class="tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</section>` : ''}
-
-  <section class="content">
-    ${html}
   </section>
 
   <footer class="article-footer">
