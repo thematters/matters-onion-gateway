@@ -310,7 +310,32 @@ async function handleArticleLookup(input, lang) {
   }
 
   const html = sanitizeArticleHtml(article.contents?.html || '')
-  return respond(articleView({ article, html, sourceInput: input, lang }))
+  const comments = buildComments(article.comments)
+  return respond(articleView({ article, html, comments, sourceInput: input, lang }))
+}
+
+// Flatten the comments connection into sanitized, read-only display objects.
+// Only active comments are shown, with one level of active replies.
+function buildComments(connection) {
+  return (connection?.edges || [])
+    .map((edge) => edge?.node)
+    .filter((comment) => comment && comment.state === 'active')
+    .map((comment) => ({
+      id: comment.id,
+      author: comment.author || {},
+      createdAt: comment.createdAt,
+      pinned: Boolean(comment.pinned),
+      html: sanitizeArticleHtml(comment.content || ''),
+      replies: (comment.comments?.edges || [])
+        .map((edge) => edge?.node)
+        .filter((reply) => reply && reply.state === 'active')
+        .map((reply) => ({
+          id: reply.id,
+          author: reply.author || {},
+          createdAt: reply.createdAt,
+          html: sanitizeArticleHtml(reply.content || ''),
+        })),
+    }))
 }
 
 async function handleIpfs(cid, lang) {

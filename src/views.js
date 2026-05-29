@@ -151,7 +151,7 @@ ${authors.length ? `<section class="section">
   })
 }
 
-export function articleView({ article, html, sourceInput, lang = languages.traditional }) {
+export function articleView({ article, html, comments = [], sourceInput, lang = languages.traditional }) {
   const t = getMessages(lang)
   const author = article.author || {}
   const tags = Array.isArray(article.tags)
@@ -200,6 +200,8 @@ export function articleView({ article, html, sourceInput, lang = languages.tradi
     ${canonicalUrl ? `<p>${escapeHtml(t.canonicalSource)}: <a href="${escapeAttr(canonicalUrl)}" rel="noreferrer noopener" target="_blank">${escapeHtml(canonicalUrl)}</a></p>` : ''}
     <p>${escapeHtml(t.lookupInput)}: ${escapeHtml(sourceInput)}</p>
   </footer>
+
+  ${commentsSection(comments, article.commentCount || 0, lang)}
 </article>`,
   })
 }
@@ -331,6 +333,37 @@ function authorSearchView({ query, result, lang }) {
   ${result.authors.length ? `<div class="author-list">${result.authors.map((item) => authorCard(item, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noSearchResults)}</p>`}
 </section>`,
   })
+}
+
+function commentsSection(comments, totalCount, lang) {
+  const t = getMessages(lang)
+
+  return `<section class="comments">
+  <h2>${escapeHtml(t.comments)}</h2>
+  <p class="meta">${escapeHtml(t.commentsReadOnly)}</p>
+  ${comments.length
+    ? `<ol class="comment-list">${comments.map((comment) => commentItem(comment, lang)).join('')}</ol>
+      ${totalCount > comments.length ? `<p class="muted">${escapeHtml(t.commentsTruncated(comments.length, totalCount))}</p>` : ''}`
+    : `<p class="muted">${escapeHtml(t.noComments)}</p>`}
+</section>`
+}
+
+function commentItem(comment, lang) {
+  const author = comment.author || {}
+  const name = author.displayName || author.userName || getMessages(lang).sourceUnknown
+  const replies = Array.isArray(comment.replies) ? comment.replies : []
+
+  return `<li class="comment">
+  <div class="comment-head">
+    ${avatar(author, 'md')}
+    <div>
+      <p class="meta">${escapeHtml(name)}${author.userName ? ` (<a href="${href(`/author/${encodeURIComponent(author.userName)}`, lang)}">@${escapeHtml(author.userName)}</a>)` : ''}</p>
+      <p class="meta">${formatDate(comment.createdAt)}</p>
+    </div>
+  </div>
+  <div class="comment-body">${comment.html}</div>
+  ${replies.length ? `<ol class="comment-replies">${replies.map((reply) => commentItem(reply, lang)).join('')}</ol>` : ''}
+</li>`
 }
 
 function tagChip(tag, lang) {

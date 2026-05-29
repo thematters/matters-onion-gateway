@@ -32,6 +32,39 @@ const ARTICLE_FIELDS = `
     html
     markdown
   }
+  commentCount
+  comments(input: { first: 20, sort: newest, filter: { parentComment: null, state: active } }) {
+    totalCount
+    edges {
+      node {
+        id
+        state
+        createdAt
+        pinned
+        author {
+          userName
+          displayName
+          avatar
+        }
+        content
+        comments(input: { first: 5 }) {
+          edges {
+            node {
+              id
+              state
+              createdAt
+              author {
+                userName
+                displayName
+                avatar
+              }
+              content
+            }
+          }
+        }
+      }
+    }
+  }
 `
 
 const ARTICLE_LIST_FIELDS = `
