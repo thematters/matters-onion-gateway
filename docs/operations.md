@@ -56,15 +56,17 @@ The Tor hidden service key must never be copied into the repository.
 
 ## Health Checks
 
-`/healthz` should check:
+`/healthz` returns JSON describing app and upstream status:
 
-- App process is running
-- Config is loaded
-- GraphQL endpoint is reachable
+```json
+{ "ok": true, "checks": { "graphql": { "ok": true, "latencyMs": 120 } } }
+```
 
-It should not depend on any user account.
-
-It should not return secrets.
+- It returns HTTP 200 when the upstream GraphQL endpoint is reachable, and 503
+  when the upstream probe fails, so monitors can alert on a degraded gateway.
+- The probe is a trivial `{ __typename }` query and its result is cached for a
+  few seconds, so frequent or hostile polling cannot turn into upstream load.
+- It does not depend on any user account and returns no secrets.
 
 ## Backups
 

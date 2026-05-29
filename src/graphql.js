@@ -304,6 +304,18 @@ export async function queryMatters(query, variables = {}) {
   }
 }
 
+// Lightweight upstream reachability probe for the health check. Uses a trivial
+// query so it adds negligible load and returns no user or secret data.
+export async function pingUpstream() {
+  const started = Date.now()
+  try {
+    await queryMatters('{ __typename }')
+    return { ok: true, latencyMs: Date.now() - started }
+  } catch {
+    return { ok: false, latencyMs: Date.now() - started }
+  }
+}
+
 export async function getArticleByIdentifier(identifier) {
   if (identifier.type === 'shortHash') {
     const data = await queryMatters(ARTICLE_BY_SHORT_HASH, {

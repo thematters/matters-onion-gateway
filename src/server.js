@@ -10,6 +10,7 @@ import {
   getChannelArticles,
   getHomeFeed,
   getTagArticles,
+  pingUpstream,
   searchAuthors,
   searchArticles,
 } from './graphql.js'
@@ -80,11 +81,7 @@ export async function handleRequest(request) {
   }
 
   if (url.pathname === '/healthz') {
-    return respond({
-      status: 200,
-      headers: { 'content-type': 'application/json; charset=utf-8' },
-      body: JSON.stringify({ ok: true }),
-    })
+    return handleHealth()
   }
 
   if (url.pathname === '/favicon.ico') {
@@ -148,6 +145,34 @@ export async function handleRequest(request) {
 async function handleHome(lang) {
   const feed = await getHomeFeed()
   return respond(homeView({ ...feed, lang }))
+}
+
+// The health probe result is cached briefly so that frequent or hostile polling
+// of the public /healthz route cannot turn into upstream GraphQL load.
+const HEALTH_CACHE_MS = 10_000
+let healthCache = { at: 0, status: 200, body: '' }
+
+async function handleHealth() {
+  const now = Date.now()
+  if (healthCache.body && now - healthCache.at < HEALTH_CACHE_MS) {
+    return healthResponse(healthCache.status, healthCache.body)
+  }
+
+  const graphql = await pingUpstream()
+  const ok = graphql.ok
+  const body = JSON.stringify({ ok, checks: { graphql } })
+  const status = ok ? 200 : 503
+
+  healthCache = { at: now, status, body }
+  return healthResponse(status, body)
+}
+
+function healthResponse(status, body) {
+  return respond({
+    status,
+    headers: { 'content-type': 'application/json; charset=utf-8' },
+    body,
+  })
 }
 
 async function handleSearch(query, lang, after = null) {
