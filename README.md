@@ -80,6 +80,7 @@ GET /search?q=matters
 GET /author?q=Matty
 GET /author/{userName}
 GET /channel/{shortHash}
+GET /tag/{tagId}
 GET /article/{shortHash}
 GET /healthz
 ```

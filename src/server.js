@@ -9,13 +9,14 @@ import {
   getArticleByIdentifier,
   getChannelArticles,
   getHomeFeed,
+  getTagArticles,
   searchAuthors,
   searchArticles,
 } from './graphql.js'
 import { isDefaultLanguage, resolveLanguage } from './i18n.js'
 import { fetchIpfsCid } from './ipfs.js'
 import { sanitizeArticleHtml } from './sanitize.js'
-import { articleView, channelView, discoverView, errorView, homeView, searchView, whyOnionView } from './views.js'
+import { articleView, channelView, discoverView, errorView, homeView, searchView, tagView, whyOnionView } from './views.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const publicDir = join(__dirname, '..', 'public')
@@ -120,6 +121,11 @@ export async function handleRequest(request) {
   const channelPathMatch = url.pathname.match(/^\/channel\/([^/]+)$/)
   if (channelPathMatch) {
     return handleChannel(channelPathMatch[1], lang, after)
+  }
+
+  const tagPathMatch = url.pathname.match(/^\/tag\/([^/]+)$/)
+  if (tagPathMatch) {
+    return handleTag(decodeURIComponent(tagPathMatch[1]), lang, after)
   }
 
   const articlePathMatch = url.pathname.match(/^\/article\/([^/]+)$/)
@@ -258,6 +264,19 @@ async function handleChannel(shortHash, lang, after = null) {
     ? pageHref(`/channel/${encodeURIComponent(shortHash)}`, {}, channel.pageInfo.endCursor, lang)
     : ''
   return respond(channelView({ channel, lang, nextHref }))
+}
+
+async function handleTag(id, lang, after = null) {
+  const tag = await getTagArticles(id, { after })
+
+  if (!tag) {
+    return respond(errorView({ messageKey: 'tagNotFound', status: 404, lang }))
+  }
+
+  const nextHref = tag.pageInfo?.hasNextPage
+    ? pageHref(`/tag/${encodeURIComponent(id)}`, {}, tag.pageInfo.endCursor, lang)
+    : ''
+  return respond(tagView({ tag, lang, nextHref }))
 }
 
 async function handleArticleLookup(input, lang) {

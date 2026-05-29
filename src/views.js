@@ -155,7 +155,7 @@ export function articleView({ article, html, sourceInput, lang = languages.tradi
   const t = getMessages(lang)
   const author = article.author || {}
   const tags = Array.isArray(article.tags)
-    ? article.tags.map((tag) => tag?.content).filter(Boolean)
+    ? article.tags.filter((tag) => tag?.content)
     : []
   const cid = article.dataHash || article.mediaHash || ''
   const canonicalUrl = article.shortHash
@@ -175,7 +175,7 @@ export function articleView({ article, html, sourceInput, lang = languages.tradi
     ${article.summary ? `<p class="summary">${escapeHtml(article.summary)}</p>` : ''}
   </header>
 
-  ${tags.length ? `<section class="tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</section>` : ''}
+  ${tags.length ? `<section class="tags">${tags.map((tag) => tagChip(tag, lang)).join('')}</section>` : ''}
 
   <section class="content">
     ${html}
@@ -267,6 +267,25 @@ export function channelView({ channel, lang = languages.traditional, nextHref = 
   })
 }
 
+export function tagView({ tag, lang = languages.traditional, nextHref = '' }) {
+  const t = getMessages(lang)
+
+  return layout({
+    title: `#${tag.content}`,
+    lang,
+    body: `<section class="hero compact">
+  <nav class="topnav"><a href="${href('/', lang)}">${escapeHtml(t.home)}</a></nav>
+  <p class="eyebrow">${escapeHtml(t.tag)}</p>
+  <h1>#${escapeHtml(tag.content || '')}</h1>
+  <p class="lead">${escapeHtml(t.tagSummary(tag.numArticles || 0))}</p>
+</section>
+<section class="section">
+  ${tag.articles.length ? `<div class="article-list">${tag.articles.map((article) => articleCard(article, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noReadableArticles)}</p>`}
+  ${paginationNav(nextHref, lang)}
+</section>`,
+  })
+}
+
 export function errorView({
   message = '',
   messageKey = '',
@@ -312,6 +331,14 @@ function authorSearchView({ query, result, lang }) {
   ${result.authors.length ? `<div class="author-list">${result.authors.map((item) => authorCard(item, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noSearchResults)}</p>`}
 </section>`,
   })
+}
+
+function tagChip(tag, lang) {
+  const label = `#${escapeHtml(tag.content)}`
+  if (!tag.id) {
+    return `<span>${label}</span>`
+  }
+  return `<a href="${href(`/tag/${encodeURIComponent(tag.id)}`, lang)}">${label}</a>`
 }
 
 function paginationNav(nextHref, lang) {

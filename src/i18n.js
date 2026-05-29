@@ -55,6 +55,9 @@ const messages = {
     summaryDiscover: (articleCount, authorCount) =>
       `找到 ${articleCount} 篇公開文章與 ${authorCount} 個作者結果。`,
     summarySearch: (total, shown) => `Matters 搜尋回報 ${total} 筆公開結果，目前顯示前 ${shown} 篇可閱讀文章。`,
+    tag: '標籤',
+    tagNotFound: '找不到標籤',
+    tagSummary: (count) => `這個標籤共有 ${count} 篇文章。`,
     siteName: 'Matters 馬特市洋蔥小站',
     whyOnion: '為何需要 onion 入口',
     whyOnionCta: '了解 onion 入口如何保護閱讀',
@@ -127,6 +130,9 @@ const messages = {
     summaryDiscover: (articleCount, authorCount) =>
       `找到 ${articleCount} 篇公开文章与 ${authorCount} 个作者结果。`,
     summarySearch: (total, shown) => `Matters 搜索返回 ${total} 条公开结果，目前显示前 ${shown} 篇可阅读文章。`,
+    tag: '标签',
+    tagNotFound: '找不到标签',
+    tagSummary: (count) => `这个标签共有 ${count} 篇文章。`,
     siteName: 'Matters 马特市洋葱小站',
     whyOnion: '为什么需要 onion 入口',
     whyOnionCta: '了解 onion 入口如何保护阅读',
@@ -199,6 +205,9 @@ const messages = {
     summaryDiscover: (articleCount, authorCount) =>
       `Found ${articleCount} public articles and ${authorCount} author results.`,
     summarySearch: (total, shown) => `Matters returned ${total} public results. Showing the first ${shown} readable articles.`,
+    tag: 'Tag',
+    tagNotFound: 'Tag not found.',
+    tagSummary: (count) => `This tag has ${count} articles.`,
     siteName: 'Matters Onion Gateway',
     whyOnion: 'Why an onion gateway',
     whyOnionCta: 'Learn how the onion gateway protects reading',

@@ -200,6 +200,31 @@ const SEARCH_AUTHORS = `
   }
 `
 
+const TAG_ARTICLES = `
+  query TagArticles($id: ID!, $after: String) {
+    node(input: { id: $id }) {
+      __typename
+      ... on Tag {
+        id
+        content
+        numArticles
+        articles(input: { first: 24, after: $after }) {
+          totalCount
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+          edges {
+            node {
+              ${ARTICLE_LIST_FIELDS}
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
 export async function queryMatters(query, variables = {}) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), config.upstreamTimeoutMs)
@@ -311,6 +336,34 @@ export async function getAuthorByUserName(userName, { after = null } = {}) {
   })
 
   return normalizeAuthor(data.user)
+}
+
+export async function getTagArticles(id, { after = null } = {}) {
+  // Tag article page size is fixed at 24: the upstream `first` arg uses a
+  // constrained scalar that cannot be bound to a plain Int variable.
+  let data
+  try {
+    data = await queryMatters(TAG_ARTICLES, { id, after })
+  } catch {
+    // A malformed or unknown global id makes the node lookup fail upstream;
+    // treat that as a missing tag rather than a server error.
+    return null
+  }
+
+  const tag = data.node
+  if (!tag || tag.__typename !== 'Tag') {
+    return null
+  }
+
+  return {
+    id: tag.id,
+    content: tag.content,
+    numArticles: tag.numArticles || 0,
+    pageInfo: extractPageInfo(tag.articles),
+    articles: filterPublicArticles(
+      (tag.articles?.edges || []).map((edge) => edge?.node).filter(Boolean)
+    ),
+  }
 }
 
 export async function searchAuthors(key) {
