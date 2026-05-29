@@ -76,6 +76,7 @@ Useful local routes:
 GET /
 GET /discover?q=matters
 GET /why-onion
+GET /leave?url={external-url}
 GET /search?q=matters
 GET /author?q=Matty
 GET /author/{userName}

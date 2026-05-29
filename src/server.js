@@ -16,7 +16,7 @@ import { isDefaultLanguage, resolveLanguage } from './i18n.js'
 import { fetchIpfsCid } from './ipfs.js'
 import { isAllowedHost, isAllowedPort, assertPublicHost } from './net.js'
 import { sanitizeArticleHtml } from './sanitize.js'
-import { articleView, channelView, discoverView, errorView, homeView, searchView, whyOnionView } from './views.js'
+import { articleView, channelView, discoverView, errorView, homeView, leaveView, searchView, whyOnionView } from './views.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const publicDir = join(__dirname, '..', 'public')
@@ -103,6 +103,10 @@ export async function handleRequest(request) {
     return respond(whyOnionView({ lang }))
   }
 
+  if (url.pathname === '/leave') {
+    return handleLeave(url.searchParams.get('url') || '', lang)
+  }
+
   if (url.pathname === '/search') {
     return handleSearch(url.searchParams.get('q') || '', lang)
   }
@@ -141,6 +145,21 @@ export async function handleRequest(request) {
 async function handleHome(lang) {
   const feed = await getHomeFeed()
   return respond(homeView({ ...feed, lang }))
+}
+
+function handleLeave(rawUrl, lang) {
+  let parsed
+  try {
+    parsed = new URL(rawUrl)
+  } catch {
+    return respond(errorView({ messageKey: 'leaveInvalid', status: 400, lang }))
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return respond(errorView({ messageKey: 'leaveInvalid', status: 400, lang }))
+  }
+
+  return respond(leaveView({ url: parsed.toString(), lang }))
 }
 
 async function handleSearch(query, lang) {
