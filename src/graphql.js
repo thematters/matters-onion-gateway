@@ -172,6 +172,15 @@ const ACTIVE_CHANNELS_WITH_ARTICLES = `
           }
         }
       }
+      ... on WritingChallenge {
+        campaignArticles: articles(input: { first: $first }) {
+          edges {
+            node {
+              ${ARTICLE_LIST_FIELDS}
+            }
+          }
+        }
+      }
     }
   }
 `
@@ -197,6 +206,19 @@ const CHANNEL_ARTICLES = `
       }
       ... on CurationChannel {
         articles(input: { first: $first, after: $after }) {
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+          edges {
+            node {
+              ${ARTICLE_LIST_FIELDS}
+            }
+          }
+        }
+      }
+      ... on WritingChallenge {
+        campaignArticles: articles(input: { first: $first, after: $after }) {
           pageInfo {
             endCursor
             hasNextPage
@@ -445,13 +467,17 @@ function normalizeChannel(channel) {
     return null
   }
 
+  // WritingChallenge channels expose their articles under an aliased key because
+  // their edge type differs from the other channel types' edge type.
+  const articlesConnection = channel.articles || channel.campaignArticles
+
   return {
     id: channel.id,
     shortHash: channel.shortHash,
     title: channel.navbarTitle,
-    pageInfo: extractPageInfo(channel.articles),
+    pageInfo: extractPageInfo(articlesConnection),
     articles: filterPublicArticles(
-      (channel.articles?.edges || []).map((edge) => edge?.node).filter(Boolean)
+      (articlesConnection?.edges || []).map((edge) => edge?.node).filter(Boolean)
     ),
   }
 }
