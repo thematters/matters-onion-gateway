@@ -9,7 +9,7 @@ The MVP is acceptable when the following criteria are met.
 - The app is reachable through a `.onion` address
 - The app does not require a clearnet domain to function
 - Direct public HTTP access to the app port is not exposed
-- `/healthz` returns a minimal status without secrets
+- `/healthz` reports app and upstream status without secrets (HTTP 503 when upstream is unreachable)
 
 ## Anonymous Scope
 
@@ -38,6 +38,11 @@ The MVP is acceptable when the following criteria are met.
 - Inline event handlers are removed
 - Unknown embeds are removed
 - External links are clearly marked or routed through a warning page
+- Article tags link to a tag page listing that tag's public articles
+- Article page shows read-only comments with one level of replies when present
+- Article page shows related public articles when available
+- Search, channel, author, and tag lists paginate with a link-based cursor
+- noindex articles are hidden from every surface, including direct hash lookup
 
 ## IPFS
 
@@ -45,6 +50,20 @@ The MVP is acceptable when the following criteria are met.
 - `/ipfs/{cid}` can attempt to fetch CID content
 - IPFS failure shows a clear error without leaking internal details
 - GraphQL content fallback works when IPFS is unavailable
+- Article page shows version history with each revision's IPFS CID when revised
+
+## Discovery and Feeds
+
+- Search, channel, author, and tag lists expose a link-based `?after=` cursor
+- The single discovery field resolves exact tags and shows matching tags
+- `/feed.xml` serves an RSS feed of the latest public articles
+- Pages declare the feed via a `<link rel="alternate">` tag
+
+## Reach
+
+- When `ONION_HOSTNAME` is set, clearnet responses send an `Onion-Location` header
+- The header is omitted when the request already arrives over the onion hostname
+- A static clearnet landing page can publish the onion address without accounts
 
 ## Privacy
 
