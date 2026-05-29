@@ -40,4 +40,7 @@ export const config = {
   imageProxyAllowedHosts: parseAllowedImageHosts(),
   feedCacheTtlMs: Number(process.env.FEED_CACHE_TTL_MS || 45_000),
   maxUpstreamConcurrency: Number(process.env.MAX_UPSTREAM_CONCURRENCY || 6),
+  // The service's own .onion hostname (e.g. abc...xyz.onion). When set and a
+  // request arrives over clearnet, the app advertises the onion via Onion-Location.
+  onionHostname: (process.env.ONION_HOSTNAME || '').trim().toLowerCase(),
 }

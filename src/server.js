@@ -9,14 +9,18 @@ import {
   getArticleByIdentifier,
   getChannelArticles,
   getHomeFeed,
+  getTagArticles,
+  pingUpstream,
   searchAuthors,
   searchArticles,
+  searchTags,
 } from './graphql.js'
-import { isDefaultLanguage, resolveLanguage } from './i18n.js'
+import { getMessages, isDefaultLanguage, resolveLanguage } from './i18n.js'
+import { buildRssFeed } from './feed.js'
 import { fetchIpfsCid } from './ipfs.js'
 import { isAllowedHost, isAllowedPort, assertPublicHost } from './net.js'
 import { sanitizeArticleHtml } from './sanitize.js'
-import { articleView, channelView, discoverView, errorView, homeView, leaveView, searchView, whyOnionView } from './views.js'
+import { articleView, channelView, discoverView, errorView, homeView, leaveView, searchView, tagView, whyOnionView } from './views.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const publicDir = join(__dirname, '..', 'public')
@@ -31,6 +35,34 @@ const securityHeaders = {
 }
 
 export async function handleRequest(request) {
+  const response = await routeRequest(request)
+  return addOnionLocation(request, response)
+}
+
+// When the gateway is reached over clearnet and its own onion hostname is known,
+// advertise the onion address so Tor Browser can offer to switch to it. The
+// header is omitted when the request already arrived over the onion service.
+function addOnionLocation(request, response) {
+  if (!config.onionHostname) {
+    return response
+  }
+
+  const host = (request.headers.host || '').toLowerCase()
+  if (host === config.onionHostname) {
+    return response
+  }
+
+  const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`)
+  return {
+    ...response,
+    headers: {
+      ...response.headers,
+      'onion-location': `http://${config.onionHostname}${url.pathname}${url.search}`,
+    },
+  }
+}
+
+async function routeRequest(request) {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`)
   const lang = resolveLanguage({ searchParams: url.searchParams, headers: request.headers })
 
@@ -80,11 +112,11 @@ export async function handleRequest(request) {
   }
 
   if (url.pathname === '/healthz') {
-    return respond({
-      status: 200,
-      headers: { 'content-type': 'application/json; charset=utf-8' },
-      body: JSON.stringify({ ok: true }),
-    })
+    return handleHealth()
+  }
+
+  if (url.pathname === '/feed.xml') {
+    return handleFeed(lang)
   }
 
   if (url.pathname === '/favicon.ico') {
@@ -107,8 +139,10 @@ export async function handleRequest(request) {
     return handleLeave(url.searchParams.get('url') || '', lang)
   }
 
+  const after = url.searchParams.get('after') || null
+
   if (url.pathname === '/search') {
-    return handleSearch(url.searchParams.get('q') || '', lang)
+    return handleSearch(url.searchParams.get('q') || '', lang, after)
   }
 
   if (url.pathname === '/author') {
@@ -117,12 +151,17 @@ export async function handleRequest(request) {
 
   const authorPathMatch = url.pathname.match(/^\/author\/([^/]+)$/)
   if (authorPathMatch) {
-    return handleAuthor(decodeURIComponent(authorPathMatch[1]), lang)
+    return handleAuthor(decodeURIComponent(authorPathMatch[1]), lang, after)
   }
 
   const channelPathMatch = url.pathname.match(/^\/channel\/([^/]+)$/)
   if (channelPathMatch) {
-    return handleChannel(channelPathMatch[1], lang)
+    return handleChannel(channelPathMatch[1], lang, after)
+  }
+
+  const tagPathMatch = url.pathname.match(/^\/tag\/([^/]+)$/)
+  if (tagPathMatch) {
+    return handleTag(decodeURIComponent(tagPathMatch[1]), lang, after)
   }
 
   const articlePathMatch = url.pathname.match(/^\/article\/([^/]+)$/)
@@ -162,7 +201,64 @@ function handleLeave(rawUrl, lang) {
   return respond(leaveView({ url: parsed.toString(), lang }))
 }
 
-async function handleSearch(query, lang) {
+async function handleFeed(lang) {
+  const feed = await getHomeFeed()
+  const t = getMessages(lang)
+
+  // Link to the onion article pages when the onion hostname is known so feed
+  // readers stay within the gateway; otherwise fall back to canonical Matters.
+  const base = config.onionHostname ? `http://${config.onionHostname}` : ''
+  const homeUrl = base ? `${base}/` : 'https://matters.town'
+  const articleUrl = (article) =>
+    base
+      ? `${base}/article/${encodeURIComponent(article.shortHash)}`
+      : `https://matters.town/a/${article.shortHash}`
+
+  const xml = buildRssFeed({
+    title: t.siteName,
+    description: t.intro,
+    homeUrl,
+    selfUrl: base ? `${base}/feed.xml` : '',
+    articleUrl,
+    articles: feed.articles || [],
+  })
+
+  return respond({
+    status: 200,
+    headers: { 'content-type': 'application/rss+xml; charset=utf-8' },
+    body: xml,
+  })
+}
+
+// The health probe result is cached briefly so that frequent or hostile polling
+// of the public /healthz route cannot turn into upstream GraphQL load.
+const HEALTH_CACHE_MS = 10_000
+let healthCache = { at: 0, status: 200, body: '' }
+
+async function handleHealth() {
+  const now = Date.now()
+  if (healthCache.body && now - healthCache.at < HEALTH_CACHE_MS) {
+    return healthResponse(healthCache.status, healthCache.body)
+  }
+
+  const graphql = await pingUpstream()
+  const ok = graphql.ok
+  const body = JSON.stringify({ ok, checks: { graphql } })
+  const status = ok ? 200 : 503
+
+  healthCache = { at: now, status, body }
+  return healthResponse(status, body)
+}
+
+function healthResponse(status, body) {
+  return respond({
+    status,
+    headers: { 'content-type': 'application/json; charset=utf-8' },
+    body,
+  })
+}
+
+async function handleSearch(query, lang, after = null) {
   const key = query.trim()
 
   if (!key) {
@@ -170,8 +266,11 @@ async function handleSearch(query, lang) {
     return respond(homeView({ ...feed, lang, searchErrorKey: 'enterSearch' }))
   }
 
-  const result = await searchArticles(key)
-  return respond(searchView({ query: key, result, lang }))
+  const result = await searchArticles(key, { after })
+  const nextHref = result.pageInfo?.hasNextPage
+    ? pageHref('/search', { q: key }, result.pageInfo.endCursor, lang)
+    : ''
+  return respond(searchView({ query: key, result, lang, nextHref }))
 }
 
 async function handleDiscover(query, lang) {
@@ -201,17 +300,28 @@ async function handleDiscover(query, lang) {
     return redirect(withLang(`/author/${encodeURIComponent(direct.userName)}`, lang))
   }
 
-  const [articleResult, authorResult] = await Promise.all([
+  const [articleResult, authorResult, tagResult] = await Promise.all([
     searchArticles(key),
     searchAuthors(key),
+    searchTags(key),
   ])
-  const exact = findExactAuthor(authorResult.authors, key)
 
+  const exact = findExactAuthor(authorResult.authors, key)
   if (exact?.userName) {
     return redirect(withLang(`/author/${encodeURIComponent(exact.userName)}`, lang))
   }
 
-  return respond(discoverView({ query: key, articleResult, authorResult, lang }))
+  const exactTag = findExactTag(tagResult.tags, key)
+  if (exactTag?.id) {
+    return redirect(withLang(`/tag/${encodeURIComponent(exactTag.id)}`, lang))
+  }
+
+  return respond(discoverView({ query: key, articleResult, authorResult, tagResult, lang }))
+}
+
+function findExactTag(tags, key) {
+  const normalizedKey = key.toLocaleLowerCase()
+  return tags.find((tag) => tag.content?.toLocaleLowerCase() === normalizedKey)
 }
 
 async function handleAuthorSearch(query, lang) {
@@ -249,24 +359,43 @@ function findExactAuthor(authors, key) {
   ))
 }
 
-async function handleAuthor(userName, lang) {
-  const author = await getAuthorByUserName(userName)
+async function handleAuthor(userName, lang, after = null) {
+  const author = await getAuthorByUserName(userName, { after })
 
   if (!author) {
     return respond(errorView({ messageKey: 'noSearchResults', status: 404, lang }))
   }
 
-  return respond(searchView({ query: author.displayName || author.userName, author, lang, mode: 'author' }))
+  const nextHref = author.pageInfo?.hasNextPage
+    ? pageHref(`/author/${encodeURIComponent(userName)}`, {}, author.pageInfo.endCursor, lang)
+    : ''
+  return respond(searchView({ query: author.displayName || author.userName, author, lang, mode: 'author', nextHref }))
 }
 
-async function handleChannel(shortHash, lang) {
-  const channel = await getChannelArticles(shortHash)
+async function handleChannel(shortHash, lang, after = null) {
+  const channel = await getChannelArticles(shortHash, { after })
 
   if (!channel) {
     return respond(errorView({ messageKey: 'channelNotFound', status: 404, lang }))
   }
 
-  return respond(channelView({ channel, lang }))
+  const nextHref = channel.pageInfo?.hasNextPage
+    ? pageHref(`/channel/${encodeURIComponent(shortHash)}`, {}, channel.pageInfo.endCursor, lang)
+    : ''
+  return respond(channelView({ channel, lang, nextHref }))
+}
+
+async function handleTag(id, lang, after = null) {
+  const tag = await getTagArticles(id, { after })
+
+  if (!tag) {
+    return respond(errorView({ messageKey: 'tagNotFound', status: 404, lang }))
+  }
+
+  const nextHref = tag.pageInfo?.hasNextPage
+    ? pageHref(`/tag/${encodeURIComponent(id)}`, {}, tag.pageInfo.endCursor, lang)
+    : ''
+  return respond(tagView({ tag, lang, nextHref }))
 }
 
 async function handleArticleLookup(input, lang) {
@@ -306,7 +435,32 @@ async function handleArticleLookup(input, lang) {
   }
 
   const html = sanitizeArticleHtml(article.contents?.html || '')
-  return respond(articleView({ article, html, sourceInput: input, lang }))
+  const comments = buildComments(article.comments)
+  return respond(articleView({ article, html, comments, sourceInput: input, lang }))
+}
+
+// Flatten the comments connection into sanitized, read-only display objects.
+// Only active comments are shown, with one level of active replies.
+function buildComments(connection) {
+  return (connection?.edges || [])
+    .map((edge) => edge?.node)
+    .filter((comment) => comment && comment.state === 'active')
+    .map((comment) => ({
+      id: comment.id,
+      author: comment.author || {},
+      createdAt: comment.createdAt,
+      pinned: Boolean(comment.pinned),
+      html: sanitizeArticleHtml(comment.content || ''),
+      replies: (comment.comments?.edges || [])
+        .map((edge) => edge?.node)
+        .filter((reply) => reply && reply.state === 'active')
+        .map((reply) => ({
+          id: reply.id,
+          author: reply.author || {},
+          createdAt: reply.createdAt,
+          html: sanitizeArticleHtml(reply.content || ''),
+        })),
+    }))
 }
 
 async function handleIpfs(cid, lang) {
@@ -434,6 +588,20 @@ function withLang(path, lang) {
 
   const separator = path.includes('?') ? '&' : '?'
   return `${path}${separator}lang=${encodeURIComponent(lang)}`
+}
+
+// Build a same-page link that carries query params, the pagination cursor, and
+// the active language. Used for link-based "load more" navigation (no client JS).
+function pageHref(basePath, extraParams, after, lang) {
+  const params = new URLSearchParams(extraParams)
+  if (after) {
+    params.set('after', after)
+  }
+  if (!isDefaultLanguage(lang)) {
+    params.set('lang', lang)
+  }
+  const qs = params.toString()
+  return qs ? `${basePath}?${qs}` : basePath
 }
 
 function redirect(location) {

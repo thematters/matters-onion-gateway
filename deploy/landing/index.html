@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Matters 馬特市洋蔥小站 · Onion Gateway</title>
+  <!-- Replace __ONION_ADDRESS__ with the real xxxxx.onion hostname before publishing. -->
+  <meta http-equiv="onion-location" content="http://__ONION_ADDRESS__/">
+  <style>
+    :root { color-scheme: light; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #f7fff0;
+      color: #333;
+      font-family: PingFang TC, system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.7;
+    }
+    main { width: min(100% - 40px, 560px); padding: 48px 0; }
+    h1 { font-size: 26px; margin: 0 0 8px; }
+    .lead { color: #666; }
+    .onion {
+      display: block;
+      margin: 24px 0;
+      padding: 14px 16px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 14px;
+      overflow-wrap: anywhere;
+      color: #5a43e5;
+      text-decoration: none;
+    }
+    .muted { color: #808080; font-size: 14px; }
+    .brand { font-size: 28px; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="brand" aria-hidden="true">🧅</p>
+    <h1>Matters 馬特市洋蔥小站</h1>
+    <p class="lead">透過 Tor 洋蔥網路，匿名、唯讀地閱讀 Matters 公開內容。<br>
+      Read public Matters content anonymously over Tor.</p>
+
+    <a class="onion" href="http://__ONION_ADDRESS__/">http://__ONION_ADDRESS__/</a>
+
+    <p class="muted">
+      請使用 <a href="https://www.torproject.org/download/" rel="noreferrer noopener">Tor Browser</a>
+      開啟上方位址。使用支援 Onion-Location 的瀏覽器時，會自動提示切換到洋蔥站。<br>
+      Open the address above in Tor Browser. Browsers that support Onion-Location
+      will offer to switch automatically.
+    </p>
+  </main>
+</body>
+</html>

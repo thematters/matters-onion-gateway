@@ -52,6 +52,10 @@ Responsibilities:
 - Sanitize article HTML
 - Rewrite or proxy media
 - Serve IPFS adapter routes
+- Serve an RSS feed of the public home feed
+- Advertise the onion via `Onion-Location` on clearnet responses
+- Report app and upstream status from `/healthz`
+- Cap concurrent upstream requests and cache feeds briefly in memory
 
 ### Matters GraphQL Client
 
@@ -98,7 +102,11 @@ Gateway queries Matters GraphQL
 Gateway displays metadata and IPFS CID
 Gateway renders sanitized HTML fallback
 Gateway proxies or blocks external media
+Gateway renders version history with per-version IPFS CIDs when revised
+Gateway renders read-only comments and related articles
 ```
+
+noindex articles are hidden everywhere, including direct hash lookup.
 
 ### Anonymous Discovery
 
@@ -121,8 +129,9 @@ Gateway renders links to sanitized article pages
 User uses the single discovery field
 Gateway parses article URLs, short hashes, media hashes, and IPFS CIDs first
 Gateway tries exact author lookup second
-Gateway falls back to anonymous article and author search
-Gateway renders public article and author results
+Gateway tries exact tag lookup third
+Gateway falls back to anonymous article, author, and tag search
+Gateway renders public article, author, and tag results
 ```
 
 ### Localization
@@ -172,9 +181,15 @@ GET  /search
 GET  /author
 GET  /author/:userName
 GET  /channel/:shortHash
+GET  /tag/:tagId
 GET  /article
 GET  /article/:shortHash
 GET  /ipfs/:cid
 GET  /proxy/image
+GET  /feed.xml
 GET  /healthz
 ```
+
+List routes (`/search`, `/channel/:shortHash`, `/author/:userName`, `/tag/:tagId`)
+accept an `?after=` cursor for link-based pagination. No client JavaScript and no
+cookies are used; the cursor and language travel in the URL.
