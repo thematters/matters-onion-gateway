@@ -193,11 +193,16 @@ export function articleView({ article, html, sourceInput, lang = languages.tradi
     ${hashRow('shortHash', article.shortHash)}
     ${hashRow('dataHash', article.dataHash)}
     ${hashRow('mediaHash', article.mediaHash)}
-    ${cid ? `<p><a class="button-link" href="${href(`/ipfs/${encodeURIComponent(cid)}`, lang)}">${escapeHtml(t.openIpfs)}</a></p>` : `<p class="muted">${escapeHtml(t.noIpfsCid)}</p>`}
+    ${cid ? `<div class="ipfs-verify">
+      <h3>${escapeHtml(t.ipfsVerifyTitle)}</h3>
+      <p>${escapeHtml(t.ipfsFingerprintIntro)}</p>
+      <p><a class="button-link" href="${href(`/ipfs/${encodeURIComponent(cid)}`, lang)}">${escapeHtml(t.openIpfs)}</a></p>
+      <p class="muted">${escapeHtml(t.ipfsVerifyHow)}</p>
+    </div>` : `<p class="muted">${escapeHtml(t.noIpfsCid)}</p>`}
   </section>
 
   <footer class="article-footer">
-    ${canonicalUrl ? `<p>${escapeHtml(t.canonicalSource)}: <a href="${escapeAttr(canonicalUrl)}" rel="noreferrer noopener" target="_blank">${escapeHtml(canonicalUrl)}</a></p>` : ''}
+    ${canonicalUrl ? `<p>${escapeHtml(t.canonicalSource)}: <a href="${escapeAttr(leaveHref(canonicalUrl, lang))}" rel="noreferrer noopener">${escapeHtml(canonicalUrl)}</a></p>` : ''}
     <p>${escapeHtml(t.lookupInput)}: ${escapeHtml(sourceInput)}</p>
   </footer>
 </article>`,
@@ -260,6 +265,24 @@ export function channelView({ channel, lang = languages.traditional }) {
 </section>
 <section class="section">
   ${channel.articles.length ? `<div class="article-list">${channel.articles.map((article) => articleCard(article, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noReadableArticles)}</p>`}
+</section>`,
+  })
+}
+
+export function leaveView({ url, lang = languages.traditional }) {
+  const t = getMessages(lang)
+
+  return layout({
+    title: t.leaveTitle,
+    lang,
+    body: `<section class="hero compact">
+  <nav class="topnav"><a href="${href('/', lang)}">${escapeHtml(t.home)}</a></nav>
+  <p class="eyebrow">${escapeHtml(t.siteName)}</p>
+  <h1>${escapeHtml(t.leaveTitle)}</h1>
+  <p class="lead">${escapeHtml(t.leaveWarning)}</p>
+  <p class="hash-row"><span>${escapeHtml(t.leaveExternalUrl)}</span><code>${escapeHtml(url)}</code></p>
+  <p><a class="button-link" href="${escapeAttr(url)}" rel="noreferrer noopener" target="_blank">${escapeHtml(t.leaveContinue)}</a></p>
+  <p><a href="${href('/', lang)}">${escapeHtml(t.leaveBackHome)}</a></p>
 </section>`,
   })
 }
@@ -408,6 +431,11 @@ function href(path, lang) {
 
   const separator = path.includes('?') ? '&' : '?'
   return `${path}${separator}lang=${encodeURIComponent(lang)}`
+}
+
+// Route an external clearnet URL through the interstitial warning page.
+export function leaveHref(target, lang) {
+  return href(`/leave?url=${encodeURIComponent(target)}`, lang)
 }
 
 function langField(lang) {

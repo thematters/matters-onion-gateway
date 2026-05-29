@@ -53,9 +53,8 @@ export function sanitizeArticleHtml(html = '') {
       a: (_tagName, attribs) => ({
         tagName: 'a',
         attribs: {
-          href: attribs.href || '#',
+          href: toSafeLinkHref(attribs.href || ''),
           rel: 'noreferrer noopener',
-          target: '_blank',
         },
       }),
       img: (_tagName, attribs) => {
@@ -72,4 +71,30 @@ export function sanitizeArticleHtml(html = '') {
       },
     },
   })
+}
+
+// Route absolute clearnet links through the interstitial warning page so a reader
+// is never sent to the clearnet without an explicit, informed click. Relative and
+// in-page links are kept as-is; mailto is preserved since it makes no web request.
+export function toSafeLinkHref(href) {
+  if (!href) {
+    return '#'
+  }
+
+  let parsed
+  try {
+    parsed = new URL(href)
+  } catch {
+    return href
+  }
+
+  if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+    return `/leave?url=${encodeURIComponent(parsed.toString())}`
+  }
+
+  if (parsed.protocol === 'mailto:') {
+    return href
+  }
+
+  return '#'
 }
