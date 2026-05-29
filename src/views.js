@@ -213,6 +213,8 @@ export function articleView({ article, html, comments = [], sourceInput, lang = 
     <p>${escapeHtml(t.lookupInput)}: ${escapeHtml(sourceInput)}</p>
   </footer>
 
+  ${relatedSection(article, lang)}
+
   ${commentsSection(comments, article.commentCount || 0, lang)}
 </article>`,
   })
@@ -372,6 +374,27 @@ function versionItem(version, ordinal, lang) {
   ${cid ? `<p class="hash-row"><span>dataHash</span><code>${escapeHtml(cid)}</code></p>
   <p><a class="button-link" href="${href(`/ipfs/${encodeURIComponent(cid)}`, lang)}">${escapeHtml(t.openIpfs)}</a></p>` : ''}
 </li>`
+}
+
+function relatedSection(article, lang) {
+  const t = getMessages(lang)
+  const related = (article.relatedArticles?.edges || [])
+    .map((edge) => edge?.node)
+    .filter((node) => node
+      && node.state === 'active'
+      && (!node.access?.type || node.access.type === 'public')
+      && !node.noindex)
+
+  if (!related.length) {
+    return ''
+  }
+
+  return `<section class="section related">
+  <div class="section-heading">
+    <h2>${escapeHtml(t.relatedArticles)}</h2>
+  </div>
+  <div class="article-list">${related.map((item) => articleCard(item, lang)).join('')}</div>
+</section>`
 }
 
 function commentsSection(comments, totalCount, lang) {

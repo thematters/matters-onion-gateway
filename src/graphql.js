@@ -1,5 +1,24 @@
 import { config } from './config.js'
 
+const ARTICLE_LIST_FIELDS = `
+  id
+  title
+  shortHash
+  summary
+  createdAt
+  revisedAt
+  state
+  noindex
+  author {
+    id
+    userName
+    displayName
+  }
+  access {
+    type
+  }
+`
+
 const ARTICLE_FIELDS = `
   id
   title
@@ -31,6 +50,13 @@ const ARTICLE_FIELDS = `
   contents {
     html
     markdown
+  }
+  relatedArticles(input: { first: 6 }) {
+    edges {
+      node {
+        ${ARTICLE_LIST_FIELDS}
+      }
+    }
   }
   revisionCount
   versions(input: { first: 10 }) {
@@ -78,25 +104,6 @@ const ARTICLE_FIELDS = `
         }
       }
     }
-  }
-`
-
-const ARTICLE_LIST_FIELDS = `
-  id
-  title
-  shortHash
-  summary
-  createdAt
-  revisedAt
-  state
-  noindex
-  author {
-    id
-    userName
-    displayName
-  }
-  access {
-    type
   }
 `
 
