@@ -107,6 +107,21 @@ If onion private key leaks:
 - Publish new onion address
 - Mark old address as compromised on clearnet landing page
 
+## Upstream Protection
+
+The app collapses repeated upstream reads and caps concurrency so the single
+instance and the Matters backend are not overloaded:
+
+- `FEED_CACHE_TTL_MS` (default 45000): home and channel feeds are served from an
+  in-memory TTL cache with single-flight de-duplication, so a burst of visitors
+  produces at most one upstream GraphQL call per window.
+- `MAX_UPSTREAM_CONCURRENCY` (default 6): a global cap on concurrent upstream
+  GraphQL requests. It is global on purpose — all Tor traffic arrives from the
+  local Tor daemon, so per-IP limiting would be meaningless.
+
+The cache is in memory only; a restart simply repopulates it. No external store
+is used, in keeping with the single-instance cost target.
+
 ## Cost Controls
 
 - Avoid full-site crawling
