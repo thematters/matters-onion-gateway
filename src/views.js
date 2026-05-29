@@ -15,6 +15,7 @@ export function layout({ title, body, status = 200, lang = languages.traditional
   <title>${escapeHtml(title)}</title>
   <link rel="icon" href="/images/matters-mark-color.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
+  <link rel="alternate" type="application/rss+xml" title="${escapeAttr(t.siteName)}" href="/feed.xml">
 </head>
 <body>
   <header class="site-header">
@@ -111,11 +112,13 @@ export function discoverView({
   query,
   articleResult,
   authorResult,
+  tagResult,
   lang = languages.traditional,
 }) {
   const t = getMessages(lang)
   const articles = articleResult.articles || []
   const authors = authorResult.authors || []
+  const tags = tagResult?.tags || []
 
   return layout({
     title: `${t.discover} ${query}`,
@@ -134,6 +137,13 @@ export function discoverView({
     </div>
   </form>
 </section>
+${tags.length ? `<section class="section">
+  <div class="section-heading">
+    <p class="eyebrow">${escapeHtml(t.tag)}</p>
+    <h2>${escapeHtml(t.matchingTags)}</h2>
+  </div>
+  <div class="tags">${tags.map((item) => tagChip(item, lang)).join('')}</div>
+</section>` : ''}
 ${authors.length ? `<section class="section">
   <div class="section-heading">
     <p class="eyebrow">${escapeHtml(t.searchAuthors)}</p>
@@ -151,11 +161,11 @@ ${authors.length ? `<section class="section">
   })
 }
 
-export function articleView({ article, html, sourceInput, lang = languages.traditional }) {
+export function articleView({ article, html, comments = [], sourceInput, lang = languages.traditional }) {
   const t = getMessages(lang)
   const author = article.author || {}
   const tags = Array.isArray(article.tags)
-    ? article.tags.map((tag) => tag?.content).filter(Boolean)
+    ? article.tags.filter((tag) => tag?.content)
     : []
   const cid = article.dataHash || article.mediaHash || ''
   const canonicalUrl = article.shortHash
@@ -175,7 +185,7 @@ export function articleView({ article, html, sourceInput, lang = languages.tradi
     ${article.summary ? `<p class="summary">${escapeHtml(article.summary)}</p>` : ''}
   </header>
 
-  ${tags.length ? `<section class="tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</section>` : ''}
+  ${tags.length ? `<section class="tags">${tags.map((tag) => tagChip(tag, lang)).join('')}</section>` : ''}
 
   <section class="content">
     ${html}
@@ -201,10 +211,16 @@ export function articleView({ article, html, sourceInput, lang = languages.tradi
     </div>` : `<p class="muted">${escapeHtml(t.noIpfsCid)}</p>`}
   </section>
 
+  ${versionsSection(article, lang)}
+
   <footer class="article-footer">
     ${canonicalUrl ? `<p>${escapeHtml(t.canonicalSource)}: <a href="${escapeAttr(leaveHref(canonicalUrl, lang))}" rel="noreferrer noopener">${escapeHtml(canonicalUrl)}</a></p>` : ''}
     <p>${escapeHtml(t.lookupInput)}: ${escapeHtml(sourceInput)}</p>
   </footer>
+
+  ${relatedSection(article, lang)}
+
+  ${commentsSection(comments, article.commentCount || 0, lang)}
 </article>`,
   })
 }
@@ -216,13 +232,14 @@ export function searchView({
   author,
   mode = 'articles',
   lang = languages.traditional,
+  nextHref = '',
 }) {
   if (mode === 'authors') {
     return authorSearchView({ query, result: authorResult, lang })
   }
 
   if (mode === 'author') {
-    return authorView({ author, lang })
+    return authorView({ author, lang, nextHref })
   }
 
   const t = getMessages(lang)
@@ -247,11 +264,12 @@ export function searchView({
 </section>
 <section class="section">
   ${result.articles.length ? `<div class="article-list">${result.articles.map((article) => articleCard(article, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noReadableArticles)}</p>`}
+  ${paginationNav(nextHref, lang)}
 </section>`,
   })
 }
 
-export function channelView({ channel, lang = languages.traditional }) {
+export function channelView({ channel, lang = languages.traditional, nextHref = '' }) {
   const t = getMessages(lang)
 
   return layout({
@@ -265,6 +283,26 @@ export function channelView({ channel, lang = languages.traditional }) {
 </section>
 <section class="section">
   ${channel.articles.length ? `<div class="article-list">${channel.articles.map((article) => articleCard(article, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noReadableArticles)}</p>`}
+  ${paginationNav(nextHref, lang)}
+</section>`,
+  })
+}
+
+export function tagView({ tag, lang = languages.traditional, nextHref = '' }) {
+  const t = getMessages(lang)
+
+  return layout({
+    title: `#${tag.content}`,
+    lang,
+    body: `<section class="hero compact">
+  <nav class="topnav"><a href="${href('/', lang)}">${escapeHtml(t.home)}</a></nav>
+  <p class="eyebrow">${escapeHtml(t.tag)}</p>
+  <h1>#${escapeHtml(tag.content || '')}</h1>
+  <p class="lead">${escapeHtml(t.tagSummary(tag.numArticles || 0))}</p>
+</section>
+<section class="section">
+  ${tag.articles.length ? `<div class="article-list">${tag.articles.map((article) => articleCard(article, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noReadableArticles)}</p>`}
+  ${paginationNav(nextHref, lang)}
 </section>`,
   })
 }
@@ -334,6 +372,102 @@ function authorSearchView({ query, result, lang }) {
   })
 }
 
+function versionsSection(article, lang) {
+  const t = getMessages(lang)
+  const versions = (article.versions?.edges || []).map((edge) => edge?.node).filter(Boolean)
+
+  // A single version is not a history; only show the section when revisions exist.
+  if (versions.length <= 1) {
+    return ''
+  }
+
+  return `<section class="versions">
+  <h2>${escapeHtml(t.versionHistory)}</h2>
+  <ol class="version-list">${versions.map((version, index) => versionItem(version, versions.length - index, lang)).join('')}</ol>
+</section>`
+}
+
+function versionItem(version, ordinal, lang) {
+  const t = getMessages(lang)
+  const cid = version.dataHash || version.mediaHash || ''
+
+  return `<li class="version">
+  <p class="meta">${escapeHtml(t.versionLabel(ordinal))} · ${formatDate(version.createdAt)}</p>
+  ${version.description ? `<p>${escapeHtml(version.description)}</p>` : ''}
+  ${cid ? `<p class="hash-row"><span>dataHash</span><code>${escapeHtml(cid)}</code></p>
+  <p><a class="button-link" href="${href(`/ipfs/${encodeURIComponent(cid)}`, lang)}">${escapeHtml(t.openIpfs)}</a></p>` : ''}
+</li>`
+}
+
+function relatedSection(article, lang) {
+  const t = getMessages(lang)
+  const related = (article.relatedArticles?.edges || [])
+    .map((edge) => edge?.node)
+    .filter((node) => node
+      && node.state === 'active'
+      && (!node.access?.type || node.access.type === 'public')
+      && !node.noindex)
+
+  if (!related.length) {
+    return ''
+  }
+
+  return `<section class="section related">
+  <div class="section-heading">
+    <h2>${escapeHtml(t.relatedArticles)}</h2>
+  </div>
+  <div class="article-list">${related.map((item) => articleCard(item, lang)).join('')}</div>
+</section>`
+}
+
+function commentsSection(comments, totalCount, lang) {
+  const t = getMessages(lang)
+
+  return `<section class="comments">
+  <h2>${escapeHtml(t.comments)}</h2>
+  <p class="meta">${escapeHtml(t.commentsReadOnly)}</p>
+  ${comments.length
+    ? `<ol class="comment-list">${comments.map((comment) => commentItem(comment, lang)).join('')}</ol>
+      ${totalCount > comments.length ? `<p class="muted">${escapeHtml(t.commentsTruncated(comments.length, totalCount))}</p>` : ''}`
+    : `<p class="muted">${escapeHtml(t.noComments)}</p>`}
+</section>`
+}
+
+function commentItem(comment, lang) {
+  const author = comment.author || {}
+  const name = author.displayName || author.userName || getMessages(lang).sourceUnknown
+  const replies = Array.isArray(comment.replies) ? comment.replies : []
+
+  return `<li class="comment">
+  <div class="comment-head">
+    ${avatar(author, 'md')}
+    <div>
+      <p class="meta">${escapeHtml(name)}${author.userName ? ` (<a href="${href(`/author/${encodeURIComponent(author.userName)}`, lang)}">@${escapeHtml(author.userName)}</a>)` : ''}</p>
+      <p class="meta">${formatDate(comment.createdAt)}</p>
+    </div>
+  </div>
+  <div class="comment-body">${comment.html}</div>
+  ${replies.length ? `<ol class="comment-replies">${replies.map((reply) => commentItem(reply, lang)).join('')}</ol>` : ''}
+</li>`
+}
+
+function tagChip(tag, lang) {
+  const label = `#${escapeHtml(tag.content)}`
+  if (!tag.id) {
+    return `<span>${label}</span>`
+  }
+  return `<a href="${href(`/tag/${encodeURIComponent(tag.id)}`, lang)}">${label}</a>`
+}
+
+function paginationNav(nextHref, lang) {
+  if (!nextHref) {
+    return ''
+  }
+
+  const t = getMessages(lang)
+  return `<nav class="pagination"><a class="button-link" href="${escapeAttr(nextHref)}">${escapeHtml(t.loadMore)}</a></nav>`
+}
+
 function infoBlock(block) {
   return `<article class="info-card">
   <h3>${escapeHtml(block.title)}</h3>
@@ -341,7 +475,7 @@ function infoBlock(block) {
 </article>`
 }
 
-function authorView({ author, lang }) {
+function authorView({ author, lang, nextHref = '' }) {
   const t = getMessages(lang)
   const name = author.displayName || author.userName || 'Author'
 
@@ -367,6 +501,7 @@ function authorView({ author, lang }) {
     <h2>${escapeHtml(name)}</h2>
   </div>
   ${author.articles.length ? `<div class="article-list">${author.articles.map((article) => articleCard(article, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noReadableArticles)}</p>`}
+  ${paginationNav(nextHref, lang)}
 </section>`,
   })
 }

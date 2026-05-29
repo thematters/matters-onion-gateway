@@ -81,7 +81,9 @@ GET /search?q=matters
 GET /author?q=Matty
 GET /author/{userName}
 GET /channel/{shortHash}
+GET /tag/{tagId}
 GET /article/{shortHash}
+GET /feed.xml
 GET /healthz
 ```
 
@@ -112,6 +114,7 @@ npm test
 - [Acceptance Criteria](docs/acceptance-criteria.md)
 - [Security and Privacy](docs/security-and-privacy.md)
 - [Operations](docs/operations.md)
+- [Clearnet Landing Page](docs/clearnet-landing.md)
 - [GraphQL and IPFS Notes](docs/graphql-ipfs-notes.md)
 - [Open Questions](docs/open-questions.md)
 

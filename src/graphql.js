@@ -7,6 +7,25 @@ import { createSemaphore } from './semaphore.js'
 const upstreamSemaphore = createSemaphore(config.maxUpstreamConcurrency)
 const feedCache = createTtlCache()
 
+const ARTICLE_LIST_FIELDS = `
+  id
+  title
+  shortHash
+  summary
+  createdAt
+  revisedAt
+  state
+  noindex
+  author {
+    id
+    userName
+    displayName
+  }
+  access {
+    type
+  }
+`
+
 const ARTICLE_FIELDS = `
   id
   title
@@ -39,24 +58,59 @@ const ARTICLE_FIELDS = `
     html
     markdown
   }
-`
-
-const ARTICLE_LIST_FIELDS = `
-  id
-  title
-  shortHash
-  summary
-  createdAt
-  revisedAt
-  state
-  noindex
-  author {
-    id
-    userName
-    displayName
+  relatedArticles(input: { first: 6 }) {
+    edges {
+      node {
+        ${ARTICLE_LIST_FIELDS}
+      }
+    }
   }
-  access {
-    type
+  revisionCount
+  versions(input: { first: 10 }) {
+    totalCount
+    edges {
+      node {
+        id
+        dataHash
+        mediaHash
+        title
+        createdAt
+        description
+      }
+    }
+  }
+  commentCount
+  comments(input: { first: 20, sort: newest, filter: { parentComment: null, state: active } }) {
+    totalCount
+    edges {
+      node {
+        id
+        state
+        createdAt
+        pinned
+        author {
+          userName
+          displayName
+          avatar
+        }
+        content
+        comments(input: { first: 5 }) {
+          edges {
+            node {
+              id
+              state
+              createdAt
+              author {
+                userName
+                displayName
+                avatar
+              }
+              content
+            }
+          }
+        }
+      }
+    }
   }
 `
 
@@ -89,9 +143,13 @@ const ARTICLE_BY_MEDIA_HASH = `
 `
 
 const SEARCH_ARTICLES = `
-  query SearchArticles($key: String!) {
-    search(input: { key: $key, type: Article, first: 20, record: false }) {
+  query SearchArticles($key: String!, $after: String) {
+    search(input: { key: $key, type: Article, first: 20, after: $after, record: false }) {
       totalCount
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
       edges {
         node {
           __typename
@@ -128,18 +186,31 @@ const ACTIVE_CHANNELS_WITH_ARTICLES = `
           }
         }
       }
+      ... on WritingChallenge {
+        campaignArticles: articles(input: { first: $first }) {
+          edges {
+            node {
+              ${ARTICLE_LIST_FIELDS}
+            }
+          }
+        }
+      }
     }
   }
 `
 
 const CHANNEL_ARTICLES = `
-  query ChannelArticles($shortHash: String!, $first: Int) {
+  query ChannelArticles($shortHash: String!, $first: Int, $after: String) {
     channel(input: { shortHash: $shortHash }) {
       id
       shortHash
       navbarTitle
       ... on TopicChannel {
-        articles(input: { first: $first }) {
+        articles(input: { first: $first, after: $after }) {
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
           edges {
             node {
               ${ARTICLE_LIST_FIELDS}
@@ -148,7 +219,24 @@ const CHANNEL_ARTICLES = `
         }
       }
       ... on CurationChannel {
-        articles(input: { first: $first }) {
+        articles(input: { first: $first, after: $after }) {
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+          edges {
+            node {
+              ${ARTICLE_LIST_FIELDS}
+            }
+          }
+        }
+      }
+      ... on WritingChallenge {
+        campaignArticles: articles(input: { first: $first, after: $after }) {
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
           edges {
             node {
               ${ARTICLE_LIST_FIELDS}
@@ -161,13 +249,35 @@ const CHANNEL_ARTICLES = `
 `
 
 const AUTHOR_BY_USERNAME = `
-  query AuthorByUserName($userName: String!) {
+  query AuthorByUserName($userName: String!, $after: String) {
     user(input: { userName: $userName, userNameCaseIgnore: true }) {
       ${AUTHOR_FIELDS}
-      articles(input: { first: 24 }) {
+      articles(input: { first: 24, after: $after }) {
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
         edges {
           node {
             ${ARTICLE_LIST_FIELDS}
+          }
+        }
+      }
+    }
+  }
+`
+
+const SEARCH_TAGS = `
+  query SearchTags($key: String!) {
+    search(input: { key: $key, type: Tag, first: 10, record: false }) {
+      totalCount
+      edges {
+        node {
+          __typename
+          ... on Tag {
+            id
+            content
+            numArticles
           }
         }
       }
@@ -184,6 +294,31 @@ const SEARCH_AUTHORS = `
           __typename
           ... on User {
             ${AUTHOR_FIELDS}
+          }
+        }
+      }
+    }
+  }
+`
+
+const TAG_ARTICLES = `
+  query TagArticles($id: ID!, $after: String) {
+    node(input: { id: $id }) {
+      __typename
+      ... on Tag {
+        id
+        content
+        numArticles
+        articles(input: { first: 24, after: $after }) {
+          totalCount
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+          edges {
+            node {
+              ${ARTICLE_LIST_FIELDS}
+            }
           }
         }
       }
@@ -229,6 +364,18 @@ async function runQuery(query, variables) {
   }
 }
 
+// Lightweight upstream reachability probe for the health check. Uses a trivial
+// query so it adds negligible load and returns no user or secret data.
+export async function pingUpstream() {
+  const started = Date.now()
+  try {
+    await queryMatters('{ __typename }')
+    return { ok: true, latencyMs: Date.now() - started }
+  } catch {
+    return { ok: false, latencyMs: Date.now() - started }
+  }
+}
+
 export async function getArticleByIdentifier(identifier) {
   if (identifier.type === 'shortHash') {
     const data = await queryMatters(ARTICLE_BY_SHORT_HASH, {
@@ -247,18 +394,22 @@ export async function getArticleByIdentifier(identifier) {
   return null
 }
 
-export async function searchArticles(key, { first = 20 } = {}) {
+export async function searchArticles(key, { after = null } = {}) {
+  // Search page size is fixed at 20: the upstream `first` arg uses a constrained
+  // scalar that cannot be bound to a plain Int variable, so it is inlined above.
   const data = await queryMatters(SEARCH_ARTICLES, {
     key,
+    after,
   })
 
   return {
     totalCount: data.search?.totalCount || 0,
+    pageInfo: extractPageInfo(data.search),
     articles: filterPublicArticles(
       (data.search?.edges || [])
         .map((edge) => edge?.node)
         .filter((node) => node?.__typename === 'Article')
-    ).slice(0, first),
+    ),
   }
 }
 
@@ -291,27 +442,75 @@ async function loadHomeFeed({ firstPerChannel, limit }) {
   return { channels, articles }
 }
 
-export function getChannelArticles(shortHash, { first = 24 } = {}) {
-  return feedCache.get(`channel:${shortHash}:${first}`, config.feedCacheTtlMs, () =>
-    loadChannelArticles(shortHash, first)
+export function getChannelArticles(shortHash, { first = 24, after = null } = {}) {
+  return feedCache.get(`channel:${shortHash}:${first}:${after || ''}`, config.feedCacheTtlMs, () =>
+    loadChannelArticles(shortHash, { first, after })
   )
 }
 
-async function loadChannelArticles(shortHash, first) {
+async function loadChannelArticles(shortHash, { first, after }) {
   const data = await queryMatters(CHANNEL_ARTICLES, {
     shortHash,
     first,
+    after,
   })
 
   return normalizeChannel(data.channel)
 }
 
-export async function getAuthorByUserName(userName) {
+export async function getAuthorByUserName(userName, { after = null } = {}) {
+  // Author article page size is fixed at 24: the upstream `first` arg uses a
+  // constrained scalar that cannot be bound to a plain Int variable.
   const data = await queryMatters(AUTHOR_BY_USERNAME, {
     userName,
+    after,
   })
 
   return normalizeAuthor(data.user)
+}
+
+export async function getTagArticles(id, { after = null } = {}) {
+  // Tag article page size is fixed at 24: the upstream `first` arg uses a
+  // constrained scalar that cannot be bound to a plain Int variable.
+  let data
+  try {
+    data = await queryMatters(TAG_ARTICLES, { id, after })
+  } catch {
+    // A malformed or unknown global id makes the node lookup fail upstream;
+    // treat that as a missing tag rather than a server error.
+    return null
+  }
+
+  const tag = data.node
+  if (!tag || tag.__typename !== 'Tag') {
+    return null
+  }
+
+  return {
+    id: tag.id,
+    content: tag.content,
+    numArticles: tag.numArticles || 0,
+    pageInfo: extractPageInfo(tag.articles),
+    articles: filterPublicArticles(
+      (tag.articles?.edges || []).map((edge) => edge?.node).filter(Boolean)
+    ),
+  }
+}
+
+export async function searchTags(key) {
+  const data = await queryMatters(SEARCH_TAGS, { key })
+
+  return {
+    totalCount: data.search?.totalCount || 0,
+    tags: (data.search?.edges || [])
+      .map((edge) => edge?.node)
+      .filter((node) => node?.__typename === 'Tag' && node.content)
+      .map((node) => ({
+        id: node.id,
+        content: node.content,
+        numArticles: node.numArticles || 0,
+      })),
+  }
 }
 
 export async function searchAuthors(key) {
@@ -334,12 +533,17 @@ function normalizeChannel(channel) {
     return null
   }
 
+  // WritingChallenge channels expose their articles under an aliased key because
+  // their edge type differs from the other channel types' edge type.
+  const articlesConnection = channel.articles || channel.campaignArticles
+
   return {
     id: channel.id,
     shortHash: channel.shortHash,
     title: channel.navbarTitle,
+    pageInfo: extractPageInfo(articlesConnection),
     articles: filterPublicArticles(
-      (channel.articles?.edges || []).map((edge) => edge?.node).filter(Boolean)
+      (articlesConnection?.edges || []).map((edge) => edge?.node).filter(Boolean)
     ),
   }
 }
@@ -357,9 +561,18 @@ function normalizeAuthor(user) {
     description: user.info?.description || '',
     profileCover: user.info?.profileCover || '',
     ipnsKey: user.info?.ipnsKey || '',
+    pageInfo: extractPageInfo(user.articles),
     articles: filterPublicArticles(
       (user.articles?.edges || []).map((edge) => edge?.node).filter(Boolean)
     ),
+  }
+}
+
+// Normalize a GraphQL connection's pageInfo to the subset the views need.
+function extractPageInfo(connection) {
+  return {
+    endCursor: connection?.pageInfo?.endCursor || null,
+    hasNextPage: Boolean(connection?.pageInfo?.hasNextPage),
   }
 }
 

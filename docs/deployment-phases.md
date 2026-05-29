@@ -78,12 +78,19 @@ Exit criteria:
 
 Target time: demand-driven
 
-Possible work:
+Implemented since MVP (each read-only, anonymous, no login, no activity storage):
 
-- Read-only comments
-- Article version history
-- Author page
-- Tag page
+- Cursor pagination for search, channel, author, and tag lists
+- Tag pages, with the discovery field resolving tags
+- Read-only comments with one level of replies
+- Article version history with per-version IPFS CIDs
+- Related articles on the article page
+- RSS feed at `/feed.xml`
+- Onion-Location advertising and a clearnet landing template
+- Deeper `/healthz` that reports upstream status
+
+Remaining optional work:
+
 - Public R2 cache for non-sensitive static assets
 
 Exit criteria:
