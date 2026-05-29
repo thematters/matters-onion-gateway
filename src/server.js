@@ -32,6 +32,34 @@ const securityHeaders = {
 }
 
 export async function handleRequest(request) {
+  const response = await routeRequest(request)
+  return addOnionLocation(request, response)
+}
+
+// When the gateway is reached over clearnet and its own onion hostname is known,
+// advertise the onion address so Tor Browser can offer to switch to it. The
+// header is omitted when the request already arrived over the onion service.
+function addOnionLocation(request, response) {
+  if (!config.onionHostname) {
+    return response
+  }
+
+  const host = (request.headers.host || '').toLowerCase()
+  if (host === config.onionHostname) {
+    return response
+  }
+
+  const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`)
+  return {
+    ...response,
+    headers: {
+      ...response.headers,
+      'onion-location': `http://${config.onionHostname}${url.pathname}${url.search}`,
+    },
+  }
+}
+
+async function routeRequest(request) {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`)
   const lang = resolveLanguage({ searchParams: url.searchParams, headers: request.headers })
 
