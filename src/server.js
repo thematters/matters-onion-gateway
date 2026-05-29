@@ -13,6 +13,7 @@ import {
   pingUpstream,
   searchAuthors,
   searchArticles,
+  searchTags,
 } from './graphql.js'
 import { getMessages, isDefaultLanguage, resolveLanguage } from './i18n.js'
 import { buildRssFeed } from './feed.js'
@@ -279,17 +280,28 @@ async function handleDiscover(query, lang) {
     return redirect(withLang(`/author/${encodeURIComponent(direct.userName)}`, lang))
   }
 
-  const [articleResult, authorResult] = await Promise.all([
+  const [articleResult, authorResult, tagResult] = await Promise.all([
     searchArticles(key),
     searchAuthors(key),
+    searchTags(key),
   ])
-  const exact = findExactAuthor(authorResult.authors, key)
 
+  const exact = findExactAuthor(authorResult.authors, key)
   if (exact?.userName) {
     return redirect(withLang(`/author/${encodeURIComponent(exact.userName)}`, lang))
   }
 
-  return respond(discoverView({ query: key, articleResult, authorResult, lang }))
+  const exactTag = findExactTag(tagResult.tags, key)
+  if (exactTag?.id) {
+    return redirect(withLang(`/tag/${encodeURIComponent(exactTag.id)}`, lang))
+  }
+
+  return respond(discoverView({ query: key, articleResult, authorResult, tagResult, lang }))
+}
+
+function findExactTag(tags, key) {
+  const normalizedKey = key.toLocaleLowerCase()
+  return tags.find((tag) => tag.content?.toLocaleLowerCase() === normalizedKey)
 }
 
 async function handleAuthorSearch(query, lang) {

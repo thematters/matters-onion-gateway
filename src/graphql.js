@@ -253,6 +253,24 @@ const AUTHOR_BY_USERNAME = `
   }
 `
 
+const SEARCH_TAGS = `
+  query SearchTags($key: String!) {
+    search(input: { key: $key, type: Tag, first: 10, record: false }) {
+      totalCount
+      edges {
+        node {
+          __typename
+          ... on Tag {
+            id
+            content
+            numArticles
+          }
+        }
+      }
+    }
+  }
+`
+
 const SEARCH_AUTHORS = `
   query SearchAuthors($key: String!) {
     search(input: { key: $key, type: User, first: 10, record: false }) {
@@ -444,6 +462,22 @@ export async function getTagArticles(id, { after = null } = {}) {
     articles: filterPublicArticles(
       (tag.articles?.edges || []).map((edge) => edge?.node).filter(Boolean)
     ),
+  }
+}
+
+export async function searchTags(key) {
+  const data = await queryMatters(SEARCH_TAGS, { key })
+
+  return {
+    totalCount: data.search?.totalCount || 0,
+    tags: (data.search?.edges || [])
+      .map((edge) => edge?.node)
+      .filter((node) => node?.__typename === 'Tag' && node.content)
+      .map((node) => ({
+        id: node.id,
+        content: node.content,
+        numArticles: node.numArticles || 0,
+      })),
   }
 }
 

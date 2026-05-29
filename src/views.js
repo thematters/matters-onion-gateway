@@ -112,11 +112,13 @@ export function discoverView({
   query,
   articleResult,
   authorResult,
+  tagResult,
   lang = languages.traditional,
 }) {
   const t = getMessages(lang)
   const articles = articleResult.articles || []
   const authors = authorResult.authors || []
+  const tags = tagResult?.tags || []
 
   return layout({
     title: `${t.discover} ${query}`,
@@ -135,6 +137,13 @@ export function discoverView({
     </div>
   </form>
 </section>
+${tags.length ? `<section class="section">
+  <div class="section-heading">
+    <p class="eyebrow">${escapeHtml(t.tag)}</p>
+    <h2>${escapeHtml(t.matchingTags)}</h2>
+  </div>
+  <div class="tags">${tags.map((item) => tagChip(item, lang)).join('')}</div>
+</section>` : ''}
 ${authors.length ? `<section class="section">
   <div class="section-heading">
     <p class="eyebrow">${escapeHtml(t.searchAuthors)}</p>
