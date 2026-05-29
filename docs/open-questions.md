@@ -1,9 +1,18 @@
 # Open Questions
 
+## Resolved Decisions
+
+- noindex articles are hidden entirely (not shown with a label). Implemented:
+  filtered from all discovery surfaces and direct-lookup returns not-found.
+- Takedown and issue-reporting follow IPFS norms (content addressing means the
+  gateway de-lists and stops serving, rather than promising deletion of CIDs).
+- The repository will be open-sourced, but only after the security-sensitive parts
+  are hardened first.
+- The onion private key backup is held by the maintainer (mashbean) personally.
+
 ## Product
 
 - Should external links open directly, or always pass through a warning page?
-- Should noindex articles be hidden entirely or shown with a clear label?
 
 ## Technical
 
