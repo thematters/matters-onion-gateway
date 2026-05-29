@@ -193,7 +193,12 @@ export function articleView({ article, html, sourceInput, lang = languages.tradi
     ${hashRow('shortHash', article.shortHash)}
     ${hashRow('dataHash', article.dataHash)}
     ${hashRow('mediaHash', article.mediaHash)}
-    ${cid ? `<p><a class="button-link" href="${href(`/ipfs/${encodeURIComponent(cid)}`, lang)}">${escapeHtml(t.openIpfs)}</a></p>` : `<p class="muted">${escapeHtml(t.noIpfsCid)}</p>`}
+    ${cid ? `<div class="ipfs-verify">
+      <h3>${escapeHtml(t.ipfsVerifyTitle)}</h3>
+      <p>${escapeHtml(t.ipfsFingerprintIntro)}</p>
+      <p><a class="button-link" href="${href(`/ipfs/${encodeURIComponent(cid)}`, lang)}">${escapeHtml(t.openIpfs)}</a></p>
+      <p class="muted">${escapeHtml(t.ipfsVerifyHow)}</p>
+    </div>` : `<p class="muted">${escapeHtml(t.noIpfsCid)}</p>`}
   </section>
 
   <footer class="article-footer">

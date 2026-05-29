@@ -461,6 +461,23 @@ button:hover,
   line-height: 22px;
 }
 
+.ipfs-verify {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--accent-soft);
+}
+
+.ipfs-verify h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.ipfs-verify p {
+  margin: 8px 0 0;
+}
+
 .tags {
   display: flex;
   flex-wrap: wrap;
