@@ -454,6 +454,12 @@ button:hover,
   margin-top: 22px;
 }
 
+.pagination {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}
+
 .hash-row code {
   display: block;
   overflow-wrap: anywhere;

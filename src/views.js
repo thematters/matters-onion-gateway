@@ -211,13 +211,14 @@ export function searchView({
   author,
   mode = 'articles',
   lang = languages.traditional,
+  nextHref = '',
 }) {
   if (mode === 'authors') {
     return authorSearchView({ query, result: authorResult, lang })
   }
 
   if (mode === 'author') {
-    return authorView({ author, lang })
+    return authorView({ author, lang, nextHref })
   }
 
   const t = getMessages(lang)
@@ -242,11 +243,12 @@ export function searchView({
 </section>
 <section class="section">
   ${result.articles.length ? `<div class="article-list">${result.articles.map((article) => articleCard(article, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noReadableArticles)}</p>`}
+  ${paginationNav(nextHref, lang)}
 </section>`,
   })
 }
 
-export function channelView({ channel, lang = languages.traditional }) {
+export function channelView({ channel, lang = languages.traditional, nextHref = '' }) {
   const t = getMessages(lang)
 
   return layout({
@@ -260,6 +262,7 @@ export function channelView({ channel, lang = languages.traditional }) {
 </section>
 <section class="section">
   ${channel.articles.length ? `<div class="article-list">${channel.articles.map((article) => articleCard(article, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noReadableArticles)}</p>`}
+  ${paginationNav(nextHref, lang)}
 </section>`,
   })
 }
@@ -311,6 +314,15 @@ function authorSearchView({ query, result, lang }) {
   })
 }
 
+function paginationNav(nextHref, lang) {
+  if (!nextHref) {
+    return ''
+  }
+
+  const t = getMessages(lang)
+  return `<nav class="pagination"><a class="button-link" href="${escapeAttr(nextHref)}">${escapeHtml(t.loadMore)}</a></nav>`
+}
+
 function infoBlock(block) {
   return `<article class="info-card">
   <h3>${escapeHtml(block.title)}</h3>
@@ -318,7 +330,7 @@ function infoBlock(block) {
 </article>`
 }
 
-function authorView({ author, lang }) {
+function authorView({ author, lang, nextHref = '' }) {
   const t = getMessages(lang)
   const name = author.displayName || author.userName || 'Author'
 
@@ -344,6 +356,7 @@ function authorView({ author, lang }) {
     <h2>${escapeHtml(name)}</h2>
   </div>
   ${author.articles.length ? `<div class="article-list">${author.articles.map((article) => articleCard(article, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noReadableArticles)}</p>`}
+  ${paginationNav(nextHref, lang)}
 </section>`,
   })
 }

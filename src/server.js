@@ -102,8 +102,10 @@ export async function handleRequest(request) {
     return respond(whyOnionView({ lang }))
   }
 
+  const after = url.searchParams.get('after') || null
+
   if (url.pathname === '/search') {
-    return handleSearch(url.searchParams.get('q') || '', lang)
+    return handleSearch(url.searchParams.get('q') || '', lang, after)
   }
 
   if (url.pathname === '/author') {
@@ -112,12 +114,12 @@ export async function handleRequest(request) {
 
   const authorPathMatch = url.pathname.match(/^\/author\/([^/]+)$/)
   if (authorPathMatch) {
-    return handleAuthor(decodeURIComponent(authorPathMatch[1]), lang)
+    return handleAuthor(decodeURIComponent(authorPathMatch[1]), lang, after)
   }
 
   const channelPathMatch = url.pathname.match(/^\/channel\/([^/]+)$/)
   if (channelPathMatch) {
-    return handleChannel(channelPathMatch[1], lang)
+    return handleChannel(channelPathMatch[1], lang, after)
   }
 
   const articlePathMatch = url.pathname.match(/^\/article\/([^/]+)$/)
@@ -142,7 +144,7 @@ async function handleHome(lang) {
   return respond(homeView({ ...feed, lang }))
 }
 
-async function handleSearch(query, lang) {
+async function handleSearch(query, lang, after = null) {
   const key = query.trim()
 
   if (!key) {
@@ -150,8 +152,11 @@ async function handleSearch(query, lang) {
     return respond(homeView({ ...feed, lang, searchErrorKey: 'enterSearch' }))
   }
 
-  const result = await searchArticles(key)
-  return respond(searchView({ query: key, result, lang }))
+  const result = await searchArticles(key, { after })
+  const nextHref = result.pageInfo?.hasNextPage
+    ? pageHref('/search', { q: key }, result.pageInfo.endCursor, lang)
+    : ''
+  return respond(searchView({ query: key, result, lang, nextHref }))
 }
 
 async function handleDiscover(query, lang) {
@@ -229,24 +234,30 @@ function findExactAuthor(authors, key) {
   ))
 }
 
-async function handleAuthor(userName, lang) {
-  const author = await getAuthorByUserName(userName)
+async function handleAuthor(userName, lang, after = null) {
+  const author = await getAuthorByUserName(userName, { after })
 
   if (!author) {
     return respond(errorView({ messageKey: 'noSearchResults', status: 404, lang }))
   }
 
-  return respond(searchView({ query: author.displayName || author.userName, author, lang, mode: 'author' }))
+  const nextHref = author.pageInfo?.hasNextPage
+    ? pageHref(`/author/${encodeURIComponent(userName)}`, {}, author.pageInfo.endCursor, lang)
+    : ''
+  return respond(searchView({ query: author.displayName || author.userName, author, lang, mode: 'author', nextHref }))
 }
 
-async function handleChannel(shortHash, lang) {
-  const channel = await getChannelArticles(shortHash)
+async function handleChannel(shortHash, lang, after = null) {
+  const channel = await getChannelArticles(shortHash, { after })
 
   if (!channel) {
     return respond(errorView({ messageKey: 'channelNotFound', status: 404, lang }))
   }
 
-  return respond(channelView({ channel, lang }))
+  const nextHref = channel.pageInfo?.hasNextPage
+    ? pageHref(`/channel/${encodeURIComponent(shortHash)}`, {}, channel.pageInfo.endCursor, lang)
+    : ''
+  return respond(channelView({ channel, lang, nextHref }))
 }
 
 async function handleArticleLookup(input, lang) {
@@ -362,6 +373,20 @@ function withLang(path, lang) {
 
   const separator = path.includes('?') ? '&' : '?'
   return `${path}${separator}lang=${encodeURIComponent(lang)}`
+}
+
+// Build a same-page link that carries query params, the pagination cursor, and
+// the active language. Used for link-based "load more" navigation (no client JS).
+function pageHref(basePath, extraParams, after, lang) {
+  const params = new URLSearchParams(extraParams)
+  if (after) {
+    params.set('after', after)
+  }
+  if (!isDefaultLanguage(lang)) {
+    params.set('lang', lang)
+  }
+  const qs = params.toString()
+  return qs ? `${basePath}?${qs}` : basePath
 }
 
 function redirect(location) {

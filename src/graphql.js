@@ -82,9 +82,13 @@ const ARTICLE_BY_MEDIA_HASH = `
 `
 
 const SEARCH_ARTICLES = `
-  query SearchArticles($key: String!) {
-    search(input: { key: $key, type: Article, first: 20, record: false }) {
+  query SearchArticles($key: String!, $after: String) {
+    search(input: { key: $key, type: Article, first: 20, after: $after, record: false }) {
       totalCount
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
       edges {
         node {
           __typename
@@ -126,13 +130,17 @@ const ACTIVE_CHANNELS_WITH_ARTICLES = `
 `
 
 const CHANNEL_ARTICLES = `
-  query ChannelArticles($shortHash: String!, $first: Int) {
+  query ChannelArticles($shortHash: String!, $first: Int, $after: String) {
     channel(input: { shortHash: $shortHash }) {
       id
       shortHash
       navbarTitle
       ... on TopicChannel {
-        articles(input: { first: $first }) {
+        articles(input: { first: $first, after: $after }) {
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
           edges {
             node {
               ${ARTICLE_LIST_FIELDS}
@@ -141,7 +149,11 @@ const CHANNEL_ARTICLES = `
         }
       }
       ... on CurationChannel {
-        articles(input: { first: $first }) {
+        articles(input: { first: $first, after: $after }) {
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
           edges {
             node {
               ${ARTICLE_LIST_FIELDS}
@@ -154,10 +166,14 @@ const CHANNEL_ARTICLES = `
 `
 
 const AUTHOR_BY_USERNAME = `
-  query AuthorByUserName($userName: String!) {
+  query AuthorByUserName($userName: String!, $after: String) {
     user(input: { userName: $userName, userNameCaseIgnore: true }) {
       ${AUTHOR_FIELDS}
-      articles(input: { first: 24 }) {
+      articles(input: { first: 24, after: $after }) {
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
         edges {
           node {
             ${ARTICLE_LIST_FIELDS}
@@ -234,18 +250,22 @@ export async function getArticleByIdentifier(identifier) {
   return null
 }
 
-export async function searchArticles(key, { first = 20 } = {}) {
+export async function searchArticles(key, { after = null } = {}) {
+  // Search page size is fixed at 20: the upstream `first` arg uses a constrained
+  // scalar that cannot be bound to a plain Int variable, so it is inlined above.
   const data = await queryMatters(SEARCH_ARTICLES, {
     key,
+    after,
   })
 
   return {
     totalCount: data.search?.totalCount || 0,
+    pageInfo: extractPageInfo(data.search),
     articles: filterPublicArticles(
       (data.search?.edges || [])
         .map((edge) => edge?.node)
         .filter((node) => node?.__typename === 'Article')
-    ).slice(0, first),
+    ),
   }
 }
 
@@ -272,18 +292,22 @@ export async function getHomeFeed({ firstPerChannel = 6, limit = 24 } = {}) {
   return { channels, articles }
 }
 
-export async function getChannelArticles(shortHash, { first = 24 } = {}) {
+export async function getChannelArticles(shortHash, { first = 24, after = null } = {}) {
   const data = await queryMatters(CHANNEL_ARTICLES, {
     shortHash,
     first,
+    after,
   })
 
   return normalizeChannel(data.channel)
 }
 
-export async function getAuthorByUserName(userName) {
+export async function getAuthorByUserName(userName, { after = null } = {}) {
+  // Author article page size is fixed at 24: the upstream `first` arg uses a
+  // constrained scalar that cannot be bound to a plain Int variable.
   const data = await queryMatters(AUTHOR_BY_USERNAME, {
     userName,
+    after,
   })
 
   return normalizeAuthor(data.user)
@@ -313,6 +337,7 @@ function normalizeChannel(channel) {
     id: channel.id,
     shortHash: channel.shortHash,
     title: channel.navbarTitle,
+    pageInfo: extractPageInfo(channel.articles),
     articles: filterPublicArticles(
       (channel.articles?.edges || []).map((edge) => edge?.node).filter(Boolean)
     ),
@@ -332,9 +357,18 @@ function normalizeAuthor(user) {
     description: user.info?.description || '',
     profileCover: user.info?.profileCover || '',
     ipnsKey: user.info?.ipnsKey || '',
+    pageInfo: extractPageInfo(user.articles),
     articles: filterPublicArticles(
       (user.articles?.edges || []).map((edge) => edge?.node).filter(Boolean)
     ),
+  }
+}
+
+// Normalize a GraphQL connection's pageInfo to the subset the views need.
+function extractPageInfo(connection) {
+  return {
+    endCursor: connection?.pageInfo?.endCursor || null,
+    hasNextPage: Boolean(connection?.pageInfo?.hasNextPage),
   }
 }
 
