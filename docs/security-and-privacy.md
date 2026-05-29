@@ -106,6 +106,25 @@ MVP should include:
 
 Avoid adding CAPTCHA in MVP because it can harm Tor usability.
 
+## Image Proxy SSRF Controls
+
+The image proxy must never become a way to reach internal infrastructure. It enforces:
+
+- A host allowlist. By default only `assets.matters.news` and `imagedelivery.net`
+  are accepted, plus the configured IPFS gateway hosts. Operators can override the
+  list with `IMAGE_PROXY_ALLOWED_HOSTS`.
+- Standard web ports only (default, `80`, or `443`).
+- A public-address check: the host is resolved and rejected if any resolved
+  address is loopback, private, link-local (including the cloud metadata range),
+  CGNAT, or otherwise non-public.
+- `redirect: 'error'` so an allowed host cannot redirect the fetch elsewhere.
+- A streaming byte cap. The body is read incrementally and aborted once
+  `IMAGE_PROXY_MAX_BYTES` is exceeded; the `content-length` header is not trusted.
+
+Residual risk: a fast DNS-rebinding attacker controlling DNS for an allowlisted
+host could still pass the resolve check. The host allowlist is the primary control
+because the attacker would have to control DNS for a Matters-owned hostname.
+
 ## Content Boundary
 
 Respect:
@@ -117,3 +136,10 @@ Respect:
 - upstream errors
 
 The gateway should not turn unavailable or restricted content into public content.
+
+### noindex Handling
+
+noindex articles are hidden entirely. They are filtered out of every discovery
+surface (home, channels, author lists, search) and a direct lookup by hash returns
+the same not-found response as a missing article, so the gateway never reveals that
+a noindex article exists.

@@ -14,6 +14,7 @@ import {
 } from './graphql.js'
 import { isDefaultLanguage, resolveLanguage } from './i18n.js'
 import { fetchIpfsCid } from './ipfs.js'
+import { isAllowedHost, isAllowedPort, assertPublicHost } from './net.js'
 import { sanitizeArticleHtml } from './sanitize.js'
 import { articleView, channelView, discoverView, errorView, homeView, searchView, whyOnionView } from './views.js'
 
@@ -279,6 +280,12 @@ async function handleArticleLookup(input, lang) {
     return respond(errorView({ messageKey: 'articleNotPublic', status: 403, lang }))
   }
 
+  // noindex articles are hidden entirely: do not reveal their existence even on
+  // a direct hash lookup. Return the same not-found response as a missing article.
+  if (article.noindex) {
+    return respond(errorView({ messageKey: 'articleNotFound', status: 404, lang }))
+  }
+
   const html = sanitizeArticleHtml(article.contents?.html || '')
   return respond(articleView({ article, html, sourceInput: input, lang }))
 }
@@ -317,6 +324,19 @@ async function handleImageProxy(sourceUrl, lang) {
     return respond(errorView({ message: 'Unsupported image URL', status: 400, lang }))
   }
 
+  // SSRF defenses: the proxy may only fetch images from known Matters/IPFS hosts,
+  // on standard web ports, that resolve to public addresses. This prevents the
+  // proxy from being steered at internal services or cloud metadata endpoints.
+  if (!isAllowedHost(parsed.hostname, config.imageProxyAllowedHosts) || !isAllowedPort(parsed.port)) {
+    return respond(errorView({ message: 'Image host is not allowed', status: 403, lang }))
+  }
+
+  try {
+    await assertPublicHost(parsed.hostname)
+  } catch {
+    return respond(errorView({ message: 'Image host is not allowed', status: 403, lang }))
+  }
+
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), config.upstreamTimeoutMs)
 
@@ -324,20 +344,26 @@ async function handleImageProxy(sourceUrl, lang) {
     const upstream = await fetch(parsed, {
       headers: { accept: 'image/avif,image/webp,image/png,image/jpeg,image/gif,*/*' },
       signal: controller.signal,
+      redirect: 'error',
     })
 
     if (!upstream.ok) {
       return respond(errorView({ message: 'Image is unavailable', status: 502, lang }))
     }
 
-    const contentLength = Number(upstream.headers.get('content-length') || 0)
-    if (contentLength > config.imageProxyMaxBytes) {
-      return respond(errorView({ message: 'Image is too large', status: 413, lang }))
-    }
-
     const contentType = upstream.headers.get('content-type') || ''
     if (!contentType.startsWith('image/')) {
       return respond(errorView({ message: 'Remote resource is not an image', status: 415, lang }))
+    }
+
+    // Do not trust content-length: stream the body and abort once the byte cap is
+    // exceeded so a missing or lying header cannot make us buffer an oversized file.
+    let body
+    try {
+      body = await readCapped(upstream.body, config.imageProxyMaxBytes)
+    } catch {
+      controller.abort()
+      return respond(errorView({ message: 'Image is too large', status: 413, lang }))
     }
 
     return respond({
@@ -346,13 +372,40 @@ async function handleImageProxy(sourceUrl, lang) {
         'content-type': contentType,
         'cache-control': 'public, max-age=3600',
       },
-      body: Buffer.from(await upstream.arrayBuffer()),
+      body,
     })
   } catch {
     return respond(errorView({ message: 'Image proxy failed', status: 502, lang }))
   } finally {
     clearTimeout(timeout)
   }
+}
+
+// Read a web ReadableStream into a Buffer, throwing once the byte limit is passed.
+async function readCapped(stream, maxBytes) {
+  if (!stream) {
+    return Buffer.alloc(0)
+  }
+
+  const reader = stream.getReader()
+  const chunks = []
+  let total = 0
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        throw new Error('Image exceeds byte limit')
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.cancel().catch(() => {})
+  }
+
+  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)))
 }
 
 function withLang(path, lang) {

@@ -352,6 +352,11 @@ function filterPublicArticles(articles) {
       return false
     }
 
+    // noindex articles are hidden entirely from every discovery surface.
+    if (article.noindex) {
+      return false
+    }
+
     return true
   })
 }
