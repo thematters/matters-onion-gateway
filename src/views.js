@@ -196,6 +196,8 @@ export function articleView({ article, html, comments = [], sourceInput, lang = 
     ${cid ? `<p><a class="button-link" href="${href(`/ipfs/${encodeURIComponent(cid)}`, lang)}">${escapeHtml(t.openIpfs)}</a></p>` : `<p class="muted">${escapeHtml(t.noIpfsCid)}</p>`}
   </section>
 
+  ${versionsSection(article, lang)}
+
   <footer class="article-footer">
     ${canonicalUrl ? `<p>${escapeHtml(t.canonicalSource)}: <a href="${escapeAttr(canonicalUrl)}" rel="noreferrer noopener" target="_blank">${escapeHtml(canonicalUrl)}</a></p>` : ''}
     <p>${escapeHtml(t.lookupInput)}: ${escapeHtml(sourceInput)}</p>
@@ -333,6 +335,33 @@ function authorSearchView({ query, result, lang }) {
   ${result.authors.length ? `<div class="author-list">${result.authors.map((item) => authorCard(item, lang)).join('')}</div>` : `<p class="muted">${escapeHtml(t.noSearchResults)}</p>`}
 </section>`,
   })
+}
+
+function versionsSection(article, lang) {
+  const t = getMessages(lang)
+  const versions = (article.versions?.edges || []).map((edge) => edge?.node).filter(Boolean)
+
+  // A single version is not a history; only show the section when revisions exist.
+  if (versions.length <= 1) {
+    return ''
+  }
+
+  return `<section class="versions">
+  <h2>${escapeHtml(t.versionHistory)}</h2>
+  <ol class="version-list">${versions.map((version, index) => versionItem(version, versions.length - index, lang)).join('')}</ol>
+</section>`
+}
+
+function versionItem(version, ordinal, lang) {
+  const t = getMessages(lang)
+  const cid = version.dataHash || version.mediaHash || ''
+
+  return `<li class="version">
+  <p class="meta">${escapeHtml(t.versionLabel(ordinal))} · ${formatDate(version.createdAt)}</p>
+  ${version.description ? `<p>${escapeHtml(version.description)}</p>` : ''}
+  ${cid ? `<p class="hash-row"><span>dataHash</span><code>${escapeHtml(cid)}</code></p>
+  <p><a class="button-link" href="${href(`/ipfs/${encodeURIComponent(cid)}`, lang)}">${escapeHtml(t.openIpfs)}</a></p>` : ''}
+</li>`
 }
 
 function commentsSection(comments, totalCount, lang) {

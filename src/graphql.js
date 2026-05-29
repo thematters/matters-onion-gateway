@@ -32,6 +32,20 @@ const ARTICLE_FIELDS = `
     html
     markdown
   }
+  revisionCount
+  versions(input: { first: 10 }) {
+    totalCount
+    edges {
+      node {
+        id
+        dataHash
+        mediaHash
+        title
+        createdAt
+        description
+      }
+    }
+  }
   commentCount
   comments(input: { first: 20, sort: newest, filter: { parentComment: null, state: active } }) {
     totalCount
