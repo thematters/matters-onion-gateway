@@ -14,7 +14,8 @@ import {
   searchAuthors,
   searchArticles,
 } from './graphql.js'
-import { isDefaultLanguage, resolveLanguage } from './i18n.js'
+import { getMessages, isDefaultLanguage, resolveLanguage } from './i18n.js'
+import { buildRssFeed } from './feed.js'
 import { fetchIpfsCid } from './ipfs.js'
 import { sanitizeArticleHtml } from './sanitize.js'
 import { articleView, channelView, discoverView, errorView, homeView, searchView, tagView, whyOnionView } from './views.js'
@@ -112,6 +113,10 @@ async function routeRequest(request) {
     return handleHealth()
   }
 
+  if (url.pathname === '/feed.xml') {
+    return handleFeed(lang)
+  }
+
   if (url.pathname === '/favicon.ico') {
     return redirect('/images/matters-mark-color.svg')
   }
@@ -173,6 +178,35 @@ async function routeRequest(request) {
 async function handleHome(lang) {
   const feed = await getHomeFeed()
   return respond(homeView({ ...feed, lang }))
+}
+
+async function handleFeed(lang) {
+  const feed = await getHomeFeed()
+  const t = getMessages(lang)
+
+  // Link to the onion article pages when the onion hostname is known so feed
+  // readers stay within the gateway; otherwise fall back to canonical Matters.
+  const base = config.onionHostname ? `http://${config.onionHostname}` : ''
+  const homeUrl = base ? `${base}/` : 'https://matters.town'
+  const articleUrl = (article) =>
+    base
+      ? `${base}/article/${encodeURIComponent(article.shortHash)}`
+      : `https://matters.town/a/${article.shortHash}`
+
+  const xml = buildRssFeed({
+    title: t.siteName,
+    description: t.intro,
+    homeUrl,
+    selfUrl: base ? `${base}/feed.xml` : '',
+    articleUrl,
+    articles: feed.articles || [],
+  })
+
+  return respond({
+    status: 200,
+    headers: { 'content-type': 'application/rss+xml; charset=utf-8' },
+    body: xml,
+  })
 }
 
 // The health probe result is cached briefly so that frequent or hostile polling

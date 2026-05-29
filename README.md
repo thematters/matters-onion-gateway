@@ -82,6 +82,7 @@ GET /author/{userName}
 GET /channel/{shortHash}
 GET /tag/{tagId}
 GET /article/{shortHash}
+GET /feed.xml
 GET /healthz
 ```
 

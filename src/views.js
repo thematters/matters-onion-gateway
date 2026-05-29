@@ -15,6 +15,7 @@ export function layout({ title, body, status = 200, lang = languages.traditional
   <title>${escapeHtml(title)}</title>
   <link rel="icon" href="/images/matters-mark-color.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
+  <link rel="alternate" type="application/rss+xml" title="${escapeAttr(t.siteName)}" href="/feed.xml">
 </head>
 <body>
   <header class="site-header">
