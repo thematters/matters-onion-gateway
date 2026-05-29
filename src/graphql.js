@@ -1,4 +1,11 @@
 import { config } from './config.js'
+import { createTtlCache } from './cache.js'
+import { createSemaphore } from './semaphore.js'
+
+// Global limits, by design: all Tor traffic arrives from the local Tor daemon, so
+// these protect the single instance and the Matters backend rather than any one IP.
+const upstreamSemaphore = createSemaphore(config.maxUpstreamConcurrency)
+const feedCache = createTtlCache()
 
 const ARTICLE_FIELDS = `
   id
@@ -184,7 +191,13 @@ const SEARCH_AUTHORS = `
   }
 `
 
-export async function queryMatters(query, variables = {}) {
+export function queryMatters(query, variables = {}) {
+  // Bound concurrent upstream requests; the timeout starts only after a slot is
+  // acquired so queued requests are not penalized for waiting.
+  return upstreamSemaphore.run(() => runQuery(query, variables))
+}
+
+async function runQuery(query, variables) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), config.upstreamTimeoutMs)
 
@@ -249,7 +262,13 @@ export async function searchArticles(key, { first = 20 } = {}) {
   }
 }
 
-export async function getHomeFeed({ firstPerChannel = 6, limit = 24 } = {}) {
+export function getHomeFeed({ firstPerChannel = 6, limit = 24 } = {}) {
+  return feedCache.get(`home:${firstPerChannel}:${limit}`, config.feedCacheTtlMs, () =>
+    loadHomeFeed({ firstPerChannel, limit })
+  )
+}
+
+async function loadHomeFeed({ firstPerChannel, limit }) {
   const data = await queryMatters(ACTIVE_CHANNELS_WITH_ARTICLES, {
     first: firstPerChannel,
   })
@@ -272,7 +291,13 @@ export async function getHomeFeed({ firstPerChannel = 6, limit = 24 } = {}) {
   return { channels, articles }
 }
 
-export async function getChannelArticles(shortHash, { first = 24 } = {}) {
+export function getChannelArticles(shortHash, { first = 24 } = {}) {
+  return feedCache.get(`channel:${shortHash}:${first}`, config.feedCacheTtlMs, () =>
+    loadChannelArticles(shortHash, first)
+  )
+}
+
+async function loadChannelArticles(shortHash, first) {
   const data = await queryMatters(CHANNEL_ARTICLES, {
     shortHash,
     first,
